@@ -54,7 +54,7 @@ python main.py --config config.offline.yaml
 - `type`: alert class ("possible_person" for this MVP)
 
 **Real Test Results:**
-- Clip: 3840×2160 street footage, 25 fps, ~10 sec
+- Clip: 3840×2160 street footage, 25 fps, ~14 sec
 - Detections: 2400 person alerts across the clip
 - Confidence range: 0.50–0.95 (realistic spread, no wall of marginals)
 - Coordinates: Cluster by person, drift smoothly with simulated drone path

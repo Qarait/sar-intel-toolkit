@@ -43,7 +43,7 @@ def estimate_target_position(
 
 def create_alert(event_time: datetime, lat: float, lon: float, confidence: float) -> Dict[str, object]:
     return {
-        "timestamp": event_time.astimezone(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+        "timestamp": event_time.astimezone(timezone.utc).isoformat(timespec='milliseconds').replace("+00:00", "Z"),
         "lat": round(float(lat), 7),
         "lon": round(float(lon), 7),
         "confidence": round(float(confidence), 4),

@@ -1,4 +1,4 @@
-opencv-python
-numpy
-ultralytics
-pyyaml
+opencv-python>=4.5.0,<5.0.0
+numpy>=1.19.0,<2.0.0
+ultralytics>=8.0.0,<9.0.0
+pyyaml>=5.3.0,<7.0.0

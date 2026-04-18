@@ -2,6 +2,16 @@
 
 This version runs person detection on video frames, fuses detections with simulated drone telemetry, and deduplicates repeated detections into confirmed tracks across frames.
 
+## Architecture
+
+```
+Video → Frame Extraction → Person Detection (YOLO) → Geotag Fusion → Alert Output
+                                                ↓
+                                           Tracker (IoU + GPS) → Track Deduplication → Track Output
+```
+
+The pipeline processes each video frame independently, detects people, fuses detections with simulated drone GPS, and optionally associates detections across frames into higher-level tracks.
+
 ## New in v0.2
 
 - **Track Association:** Links frame-level detections across time using bounding-box IoU, approximate GPS proximity, frame-gap limits, and minimum-hit thresholds.
@@ -105,6 +115,16 @@ Confirmed detection sequences deduplicated across frames. Each track summarizes 
 - `mean_confidence`: Average detector confidence across all detections
 - `representative_bbox`: Bounding box with highest confidence
 
+### Geotagging Limitations
+
+The geotagging step is intentionally approximate and suitable for simulation-first workflows:
+- Assumes a nadir-looking (downward-facing) camera
+- Assumes flat ground with no terrain model
+- No lens distortion correction
+- Suitable for SAR planning and area deconfliction, not for precise strike coordinates
+
+For operational systems, geotagging should be replaced with proper camera calibration, ground-truth terrain data, and multi-sensor fusion.
+
 **Real Test Results:**
 - Clip: 3840×2160 street footage, 25 fps, ~14 sec
 - Frame-level detections: 1699 alerts in `alerts.json`
@@ -132,6 +152,5 @@ tracking:
 ## Notes
 
 - Tracks are **confirmed detection sequences**, not guaranteed unique real-world people. Occlusion, out-of-frame motion, or detector instability can fragment one person into multiple tracks.
-- The geotagging step is intentionally approximate: it assumes a nadir-looking camera, flat ground, and no terrain model.
-- `config.yaml` uses a pretrained Ultralytics detector. `config.offline.yaml` forces OpenCV HOG detection.
-- SimpleTracker is lightweight and dependency-free: IoU + proximity matching, no Kalman filter or Hungarian algorithm.
+- `config.yaml` uses a pretrained Ultralytics detector. `config.offline.yaml` forces OpenCV HOG detection for offline operation.
+- SimpleTracker is lightweight and dependency-free: greedy IoU + proximity matching, no Kalman filter or Hungarian algorithm.

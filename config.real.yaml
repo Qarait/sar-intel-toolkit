@@ -11,7 +11,7 @@ mission:
   drone_speed_mps: 8.0
 
 video:
-  path: C:\Users\Loritamus\Downloads\13951638_3840_2160_25fps.mp4
+  path: sample_data/video.mp4
   frame_stride: 1
   start_time_utc: "2026-04-18T15:00:00Z"
 
@@ -23,6 +23,15 @@ camera:
   horizontal_fov_deg: 78.0
   vertical_fov_deg: 49.0
 
+tracking:
+  enabled: true
+  include_track_id_in_alerts: false
+  iou_threshold: 0.25
+  max_frame_gap: 10
+  max_position_distance_m: 12.0
+  min_hits: 3
+
 output:
   alerts_path: output/alerts.json
+  tracks_path: output/tracks.json
   waypoints_path: sample_data/path.json

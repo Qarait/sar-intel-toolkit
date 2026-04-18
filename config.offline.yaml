@@ -1,0 +1,28 @@
+search_area:
+  min_lat: 43.6490
+  min_lon: -79.3810
+  max_lat: 43.6510
+  max_lon: -79.3790
+
+mission:
+  altitude_m: 60.0
+  lane_spacing_m: 20.0
+  forward_step_m: 20.0
+  drone_speed_mps: 8.0
+
+video:
+  path: sample_data/video.mp4
+  frame_stride: 2
+  start_time_utc: "2026-04-17T19:30:00Z"
+
+detector:
+  model: hog
+  confidence_threshold: 0.5
+
+camera:
+  horizontal_fov_deg: 78.0
+  vertical_fov_deg: 49.0
+
+output:
+  alerts_path: output/alerts.json
+  waypoints_path: sample_data/path.json

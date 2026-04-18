@@ -80,7 +80,7 @@ def run(config_path: str = "config.yaml") -> None:
 
     fps = cap.get(cv2.CAP_PROP_FPS)
     if not fps or fps <= 0:
-        print("WARNING: Could not read FPS from video; falling back to 30.0")
+        print("WARNING: Could not read FPS from video metadata; defaulting to 30.0 FPS. Alert timestamps may be approximate.")
         fps = 30.0
 
     frame_stride = max(1, int(video_cfg.get("frame_stride", 1)))
@@ -98,8 +98,7 @@ def run(config_path: str = "config.yaml") -> None:
             frame_idx += 1
             continue
 
-        # t_seconds is computed from frame_idx (not processed frame count), so frame_stride
-        # is transparent to time calculation: frame_idx / fps gives the absolute time in the video.
+        # frame_idx is the absolute source-video frame index, so frame_idx / fps remains correct even when frame_stride skips processing some frames.
         t_seconds = frame_idx / fps
         event_time = mission_start + timedelta(seconds=t_seconds)
         drone_lat, drone_lon = telemetry.position_at(t_seconds)

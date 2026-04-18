@@ -1,0 +1,225 @@
+import math
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
+
+
+METERS_PER_DEGREE_LAT = 111_320.0
+
+
+def _format_utc(ts: datetime) -> str:
+    return ts.astimezone(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def _bbox_iou(a: Sequence[float], b: Sequence[float]) -> float:
+    ax1, ay1, ax2, ay2 = [float(v) for v in a]
+    bx1, by1, bx2, by2 = [float(v) for v in b]
+
+    inter_x1 = max(ax1, bx1)
+    inter_y1 = max(ay1, by1)
+    inter_x2 = min(ax2, bx2)
+    inter_y2 = min(ay2, by2)
+
+    inter_w = max(0.0, inter_x2 - inter_x1)
+    inter_h = max(0.0, inter_y2 - inter_y1)
+    inter_area = inter_w * inter_h
+
+    area_a = max(0.0, ax2 - ax1) * max(0.0, ay2 - ay1)
+    area_b = max(0.0, bx2 - bx1) * max(0.0, by2 - by1)
+    union = area_a + area_b - inter_area
+
+    if union <= 0.0:
+        return 0.0
+    return inter_area / union
+
+
+def _meters_per_degree_lon(at_lat: float) -> float:
+    return METERS_PER_DEGREE_LAT * math.cos(math.radians(at_lat))
+
+
+def _distance_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Small-area lat/lon distance approximation in meters."""
+    mean_lat = (lat1 + lat2) / 2.0
+    north_m = (lat2 - lat1) * METERS_PER_DEGREE_LAT
+    east_m = (lon2 - lon1) * _meters_per_degree_lon(mean_lat)
+    return math.hypot(east_m, north_m)
+
+
+@dataclass
+class Track:
+    track_id: int
+    bbox: List[float]
+    first_frame: int
+    last_frame: int
+    first_seen: datetime
+    last_seen: datetime
+    hits: int = 0
+    confidence_sum: float = 0.0
+    max_confidence: float = 0.0
+    weighted_lat_sum: float = 0.0
+    weighted_lon_sum: float = 0.0
+    confidence_weight_sum: float = 0.0
+    last_lat: float = 0.0
+    last_lon: float = 0.0
+    missed_frames: int = 0
+    representative_bbox: List[float] = field(default_factory=list)
+
+    def update(self, detection: Dict[str, Any], frame_idx: int, event_time: datetime) -> None:
+        confidence = float(detection["confidence"])
+        lat = float(detection["lat"])
+        lon = float(detection["lon"])
+        bbox = [float(v) for v in detection["bbox"]]
+
+        self.bbox = bbox
+        self.last_frame = int(frame_idx)
+        self.last_seen = event_time
+        self.hits += 1
+        self.confidence_sum += confidence
+        self.max_confidence = max(self.max_confidence, confidence)
+        self.weighted_lat_sum += lat * confidence
+        self.weighted_lon_sum += lon * confidence
+        self.confidence_weight_sum += confidence
+        self.last_lat = lat
+        self.last_lon = lon
+        self.missed_frames = 0
+
+        if not self.representative_bbox or confidence >= self.max_confidence:
+            self.representative_bbox = bbox
+
+    @property
+    def mean_confidence(self) -> float:
+        if self.hits <= 0:
+            return 0.0
+        return self.confidence_sum / self.hits
+
+    @property
+    def mean_lat(self) -> float:
+        if self.confidence_weight_sum <= 0.0:
+            return self.last_lat
+        return self.weighted_lat_sum / self.confidence_weight_sum
+
+    @property
+    def mean_lon(self) -> float:
+        if self.confidence_weight_sum <= 0.0:
+            return self.last_lon
+        return self.weighted_lon_sum / self.confidence_weight_sum
+
+    def to_summary(self) -> Dict[str, Any]:
+        return {
+            "track_id": self.track_id,
+            "type": "possible_person_track",
+            "first_seen": _format_utc(self.first_seen),
+            "last_seen": _format_utc(self.last_seen),
+            "first_frame": self.first_frame,
+            "last_frame": self.last_frame,
+            "hits": self.hits,
+            "lat": round(float(self.mean_lat), 7),
+            "lon": round(float(self.mean_lon), 7),
+            "max_confidence": round(float(self.max_confidence), 4),
+            "mean_confidence": round(float(self.mean_confidence), 4),
+            "representative_bbox": [round(float(v), 2) for v in self.representative_bbox],
+        }
+
+
+class SimpleTracker:
+    """Lightweight tracker/deduplicator for MVP video detections.
+
+    This is deliberately small and dependency-free. It links detections across frames using
+    image-space overlap plus GPS proximity, then emits one confirmed summary per track.
+    """
+
+    def __init__(
+        self,
+        iou_threshold: float = 0.25,
+        max_frame_gap: int = 10,
+        max_position_distance_m: float = 12.0,
+        min_hits: int = 3,
+    ) -> None:
+        self.iou_threshold = float(iou_threshold)
+        self.max_frame_gap = int(max_frame_gap)
+        self.max_position_distance_m = float(max_position_distance_m)
+        self.min_hits = int(min_hits)
+        self.tracks: Dict[int, Track] = {}
+        self._next_track_id = 1
+
+    def _new_track(self, detection: Dict[str, Any], frame_idx: int, event_time: datetime) -> Track:
+        track = Track(
+            track_id=self._next_track_id,
+            bbox=[float(v) for v in detection["bbox"]],
+            first_frame=int(frame_idx),
+            last_frame=int(frame_idx),
+            first_seen=event_time,
+            last_seen=event_time,
+        )
+        self._next_track_id += 1
+        track.update(detection, frame_idx, event_time)
+        self.tracks[track.track_id] = track
+        return track
+
+    def _score_candidate(self, track: Track, detection: Dict[str, Any], frame_idx: int) -> Optional[float]:
+        frame_gap = int(frame_idx) - track.last_frame
+        if frame_gap < 0 or frame_gap > self.max_frame_gap:
+            return None
+
+        iou = _bbox_iou(track.bbox, detection["bbox"])
+        distance = _distance_m(
+            track.last_lat,
+            track.last_lon,
+            float(detection["lat"]),
+            float(detection["lon"]),
+        )
+
+        position_score = 0.0
+        if self.max_position_distance_m > 0.0:
+            position_score = max(0.0, 1.0 - (distance / self.max_position_distance_m))
+
+        # Accept either stable image overlap or close geotag proximity.
+        if iou < self.iou_threshold and distance > self.max_position_distance_m:
+            return None
+
+        # IoU is most reliable when available; proximity helps when boxes jitter.
+        recency_bonus = max(0.0, 1.0 - (frame_gap / max(1, self.max_frame_gap))) * 0.05
+        return (2.0 * iou) + position_score + recency_bonus
+
+    def update(
+        self,
+        detections: List[Dict[str, Any]],
+        frame_idx: int,
+        event_time: datetime,
+    ) -> List[Dict[str, Any]]:
+        assigned_tracks: Set[int] = set()
+        enriched: List[Dict[str, Any]] = []
+
+        # Greedy matching is enough for the MVP and keeps the implementation transparent.
+        for detection in sorted(detections, key=lambda d: float(d["confidence"]), reverse=True):
+            best_track: Optional[Track] = None
+            best_score: Optional[float] = None
+
+            for track in self.tracks.values():
+                if track.track_id in assigned_tracks:
+                    continue
+
+                score = self._score_candidate(track, detection, frame_idx)
+                if score is None:
+                    continue
+
+                if best_score is None or score > best_score:
+                    best_score = score
+                    best_track = track
+
+            if best_track is None:
+                best_track = self._new_track(detection, frame_idx, event_time)
+            else:
+                best_track.update(detection, frame_idx, event_time)
+
+            assigned_tracks.add(best_track.track_id)
+            enriched_detection = dict(detection)
+            enriched_detection["track_id"] = best_track.track_id
+            enriched.append(enriched_detection)
+
+        return enriched
+
+    def confirmed_tracks(self) -> List[Dict[str, Any]]:
+        summaries = [track.to_summary() for track in self.tracks.values() if track.hits >= self.min_hits]
+        summaries.sort(key=lambda item: (item["first_frame"], item["track_id"]))
+        return summaries

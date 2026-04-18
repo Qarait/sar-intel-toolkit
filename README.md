@@ -6,7 +6,7 @@ This version runs person detection on video frames, fuses detections with simula
 
 - **Track Association:** Links frame-level detections across time using bounding-box IoU, approximate GPS proximity, frame-gap limits, and minimum-hit thresholds.
 - **Dual Output:** Preserves `alerts.json` (one detection per frame, backward-compatible) and adds `tracks.json` (confirmed detection sequences).
-- **Validation:** Real street footage (3840×2160, 25fps, ~10 sec) produced **1699 frame-level alerts deduplicated into 29 confirmed tracks** — a ~58.6× reduction.
+- **Validation:** Real street footage (3840×2160, 25fps, ~14 sec) produced **1699 frame-level alerts deduplicated into 29 confirmed tracks** — a ~58.6× reduction.
 
 ## Run
 
@@ -39,7 +39,7 @@ python main.py --config config.offline.yaml
 
 ### `output/alerts.json`
 
-One entry per detected person per frame. Below is a real run on daylight street footage (3840×2160, 25fps, ~10 seconds):
+One entry per detected person per frame. Below is a real run on daylight street footage (3840×2160, 25fps, ~14 seconds):
 
 ```json
 [

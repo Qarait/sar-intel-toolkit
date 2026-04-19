@@ -13,7 +13,9 @@ def meters_to_lat(meters: float) -> float:
 def meters_to_lon(meters: float, at_lat: float) -> float:
     cos_lat = math.cos(math.radians(at_lat))
     if abs(cos_lat) < 1e-9:
-        raise ValueError("Longitude conversion is unstable near the poles.")
+        raise ValueError(
+            f"Cannot convert meters to longitude at latitude={at_lat!r}; conversion is unstable near the poles."
+        )
     return meters / (METERS_PER_DEGREE_LAT * cos_lat)
 
 
@@ -56,11 +58,17 @@ def generate_grid(
 ) -> List[Dict[str, float]]:
     """Generate a simple lawnmower grid over a small search area."""
     if min_lat >= max_lat or min_lon >= max_lon:
-        raise ValueError("Invalid bounding box: min values must be smaller than max values.")
+        raise ValueError(
+            "Invalid bounding box: expected min_lat < max_lat and min_lon < max_lon "
+            f"but received min_lat={min_lat!r}, max_lat={max_lat!r}, min_lon={min_lon!r}, max_lon={max_lon!r}."
+        )
     if altitude_m <= 0:
-        raise ValueError("Altitude must be positive.")
+        raise ValueError(f"mission.altitude_m must be > 0, got {altitude_m!r}.")
     if lane_spacing_m <= 0 or forward_step_m <= 0:
-        raise ValueError("Spacing values must be positive.")
+        raise ValueError(
+            "mission.lane_spacing_m and mission.forward_step_m must both be > 0 "
+            f"but received lane_spacing_m={lane_spacing_m!r}, forward_step_m={forward_step_m!r}."
+        )
 
     waypoints: List[Dict[str, float]] = []
     row_lat = min_lat

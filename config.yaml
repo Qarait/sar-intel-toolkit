@@ -20,7 +20,7 @@ video:
   start_time_utc: "2026-04-17T19:30:00Z"
 
 detector:
-  model: yolo26n.pt
+  model: yolov8n.pt
   confidence_threshold: 0.5
 
 camera:

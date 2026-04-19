@@ -8,7 +8,7 @@ import cv2
 import yaml
 
 from detector import PersonDetector
-from fusion import create_alert, estimate_target_position
+from fusion import create_alert, estimate_target_position_with_mode
 from geojson_export import write_tracks_geojson
 from planner import generate_grid
 from telemetry import TelemetryReplay, TelemetrySimulator
@@ -60,6 +60,7 @@ def run(config_path: str = "config.yaml") -> None:
     tracking_cfg = config.get("tracking", {})
     scoring_cfg = config.get("track_scoring", {})
     geojson_cfg = config.get("geojson", {})
+    geotagging_cfg = config.get("geotagging", {})
 
     waypoints = generate_grid(
         min_lat=float(search_area["min_lat"]),
@@ -110,6 +111,9 @@ def run(config_path: str = "config.yaml") -> None:
 
     alerts = []
     frame_idx = 0
+    geotag_mode = str(geotagging_cfg.get("mode", "nadir"))
+    geotag_target_point = str(geotagging_cfg.get("target_point", "bbox_center"))
+    include_geotag_metadata = bool(geotagging_cfg.get("include_geotag_metadata", False))
 
     while True:
         ok, frame = cap.read()
@@ -127,12 +131,13 @@ def run(config_path: str = "config.yaml") -> None:
         drone_lat = float(drone_state["lat"])
         drone_lon = float(drone_state["lon"])
         altitude_m = float(drone_state.get("altitude_m", mission["altitude_m"]))
+        yaw_deg = float(drone_state.get("yaw_deg", 0.0))
 
         raw_detections = detector.detect(frame)
         detections = []
 
         for detection in raw_detections:
-            target_lat, target_lon = estimate_target_position(
+            target_lat, target_lon = estimate_target_position_with_mode(
                 drone_lat=drone_lat,
                 drone_lon=drone_lon,
                 bbox=detection["bbox"],
@@ -140,10 +145,17 @@ def run(config_path: str = "config.yaml") -> None:
                 altitude_m=altitude_m,
                 horizontal_fov_deg=float(camera_cfg["horizontal_fov_deg"]),
                 vertical_fov_deg=float(camera_cfg["vertical_fov_deg"]),
+                mode=geotag_mode,
+                yaw_deg=yaw_deg,
+                target_point=geotag_target_point,
             )
             enriched_detection = dict(detection)
             enriched_detection["lat"] = target_lat
             enriched_detection["lon"] = target_lon
+            if include_geotag_metadata:
+                enriched_detection["geotag_mode"] = geotag_mode
+                enriched_detection["geotag_yaw_deg"] = yaw_deg
+                enriched_detection["geotag_target_point"] = geotag_target_point
             detections.append(enriched_detection)
 
         if tracker is not None:

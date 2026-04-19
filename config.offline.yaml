@@ -27,6 +27,11 @@ camera:
   horizontal_fov_deg: 78.0
   vertical_fov_deg: 49.0
 
+geotagging:
+  mode: heading_aware_nadir
+  target_point: bbox_center
+  include_geotag_metadata: false
+
 tracking:
   enabled: true
   include_track_id_in_alerts: false

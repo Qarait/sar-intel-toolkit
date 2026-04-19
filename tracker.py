@@ -271,7 +271,9 @@ class SimpleTracker:
         self.min_hits = int(min_hits)
         normalized_motion_model = str(motion_model or "none").lower()
         if normalized_motion_model not in {"none", "kalman"}:
-            raise ValueError(f"Unsupported tracking.motion_model: {motion_model!r}. Use 'none' or 'kalman'.")
+            raise ValueError(
+                f"Unsupported tracking.motion_model={motion_model!r}. Expected 'none' or 'kalman'."
+            )
         self.motion_model = normalized_motion_model
         self.kalman_config = dict(kalman_config or {})
         self.tracks: Dict[int, Track] = {}

@@ -38,6 +38,7 @@ output/alerts.json
 *.pyc
 .ultralytics/
 output/
+*.pt
 
 # Development artifacts
 *.zip

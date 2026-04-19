@@ -2,12 +2,12 @@ import argparse
 import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, List, Union
 
 import cv2
 import yaml
 
-from detector import PersonDetector
+from detector import Detection, PersonDetector
 from fusion import create_alert, estimate_target_position_with_mode
 from geojson_export import write_tracks_geojson
 from planner import generate_grid
@@ -28,7 +28,7 @@ def ensure_parent_dir(file_path: str) -> None:
     Path(file_path).parent.mkdir(parents=True, exist_ok=True)
 
 
-def build_telemetry(config: Dict[str, Any], waypoints: Any) -> Any:
+def build_telemetry(config: Dict[str, Any], waypoints: Any) -> Union[TelemetrySimulator, TelemetryReplay]:
     mission = config["mission"]
     telemetry_cfg = config.get("telemetry", {}) or {}
     mode = str(telemetry_cfg.get("mode", "simulated")).lower()
@@ -42,10 +42,14 @@ def build_telemetry(config: Dict[str, Any], waypoints: Any) -> Any:
     if mode == "replay":
         replay_path = telemetry_cfg.get("replay_path")
         if not replay_path:
-            raise ValueError("telemetry.mode is 'replay' but telemetry.replay_path is missing.")
+            raise ValueError(
+                "telemetry.mode='replay' requires telemetry.replay_path to point to a CSV telemetry log."
+            )
         return TelemetryReplay(str(replay_path))
 
-    raise ValueError(f"Unsupported telemetry.mode: {mode!r}. Use 'simulated' or 'replay'.")
+    raise ValueError(
+        f"Unsupported telemetry.mode={mode!r}. Expected 'simulated' or 'replay'."
+    )
 
 
 def run(config_path: str = "config.yaml") -> None:
@@ -99,7 +103,9 @@ def run(config_path: str = "config.yaml") -> None:
     video_path = video_cfg["path"]
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
-        raise RuntimeError(f"Could not open video: {video_path}")
+        raise RuntimeError(
+            f"Failed to open video.path={video_path!r}. Check that the file exists and is readable by OpenCV."
+        )
 
     fps = cap.get(cv2.CAP_PROP_FPS)
     if not fps or fps <= 0:
@@ -128,19 +134,19 @@ def run(config_path: str = "config.yaml") -> None:
         t_seconds = frame_idx / fps
         event_time = mission_start + timedelta(seconds=t_seconds)
         drone_state = telemetry.state_at(t_seconds, event_time)
-        drone_lat = float(drone_state["lat"])
-        drone_lon = float(drone_state["lon"])
-        altitude_m = float(drone_state.get("altitude_m", mission["altitude_m"]))
-        yaw_deg = float(drone_state.get("yaw_deg", 0.0))
+        drone_lat = drone_state.lat
+        drone_lon = drone_state.lon
+        altitude_m = drone_state.altitude_m
+        yaw_deg = drone_state.yaw_deg
 
-        raw_detections = detector.detect(frame)
+        raw_detections: List[Detection] = detector.detect(frame)
         detections = []
 
         for detection in raw_detections:
             target_lat, target_lon = estimate_target_position_with_mode(
                 drone_lat=drone_lat,
                 drone_lon=drone_lon,
-                bbox=detection["bbox"],
+            bbox=detection.bbox,
                 frame_shape=frame.shape,
                 altitude_m=altitude_m,
                 horizontal_fov_deg=float(camera_cfg["horizontal_fov_deg"]),
@@ -149,7 +155,10 @@ def run(config_path: str = "config.yaml") -> None:
                 yaw_deg=yaw_deg,
                 target_point=geotag_target_point,
             )
-            enriched_detection = dict(detection)
+            enriched_detection = {
+                "confidence": detection.confidence,
+                "bbox": list(detection.bbox),
+            }
             enriched_detection["lat"] = target_lat
             enriched_detection["lon"] = target_lon
             if include_geotag_metadata:

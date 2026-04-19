@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 import cv2
@@ -6,6 +7,12 @@ try:
     from ultralytics import YOLO
 except Exception:  # pragma: no cover - import fallback for minimal environments
     YOLO = None  # type: ignore
+
+
+@dataclass(frozen=True)
+class Detection:
+    confidence: float
+    bbox: List[float]
 
 
 class PersonDetector:
@@ -38,7 +45,7 @@ class PersonDetector:
         self.backend = "hog"
         self.model = None
 
-    def _detect_with_hog(self, frame: Any) -> List[Dict[str, Any]]:
+    def _detect_with_hog(self, frame: Any) -> List[Detection]:
         rects, weights = self.hog.detectMultiScale(
             frame,
             winStride=(8, 8),
@@ -46,22 +53,22 @@ class PersonDetector:
             scale=1.05,
         )
 
-        detections: List[Dict[str, Any]] = []
+        detections: List[Detection] = []
         for (x, y, w, h), weight in zip(rects, weights):
             confidence = float(weight)
             if confidence < self.confidence_threshold:
                 continue
             detections.append(
-                {
-                    "confidence": confidence,
-                    "bbox": [float(x), float(y), float(x + w), float(y + h)],
-                }
+                Detection(
+                    confidence=confidence,
+                    bbox=[float(x), float(y), float(x + w), float(y + h)],
+                )
             )
         return detections
 
-    def _detect_with_ultralytics(self, frame: Any) -> List[Dict[str, Any]]:
+    def _detect_with_ultralytics(self, frame: Any) -> List[Detection]:
         results = self.model.predict(source=frame, verbose=False)[0]
-        detections: List[Dict[str, Any]] = []
+        detections: List[Detection] = []
 
         if results.boxes is None:
             return detections
@@ -76,15 +83,15 @@ class PersonDetector:
 
             x1, y1, x2, y2 = box.xyxy[0].tolist()
             detections.append(
-                {
-                    "confidence": confidence,
-                    "bbox": [float(x1), float(y1), float(x2), float(y2)],
-                }
+                Detection(
+                    confidence=confidence,
+                    bbox=[float(x1), float(y1), float(x2), float(y2)],
+                )
             )
 
         return detections
 
-    def detect(self, frame: Any) -> List[Dict[str, Any]]:
+    def detect(self, frame: Any) -> List[Detection]:
         if self.backend == "ultralytics" and self.model is not None:
             try:
                 return self._detect_with_ultralytics(frame)

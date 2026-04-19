@@ -14,7 +14,9 @@ def _select_bbox_point(bbox: Sequence[float], target_point: str) -> Tuple[float,
     if target_point == "bbox_bottom_center":
         return center_x, y2
 
-    raise ValueError(f"Unsupported geotagging.target_point: {target_point!r}. Use 'bbox_center' or 'bbox_bottom_center'.")
+    raise ValueError(
+        f"Unsupported geotagging.target_point={target_point!r}. Expected 'bbox_center' or 'bbox_bottom_center'."
+    )
 
 
 def _image_offset_to_ground_m(
@@ -73,7 +75,9 @@ def estimate_target_position_with_mode(
     elif mode == "heading_aware_nadir":
         east_offset_m, north_offset_m = _rotate_body_to_world(right_m, forward_m, yaw_deg)
     else:
-        raise ValueError(f"Unsupported geotagging.mode: {mode!r}. Use 'nadir' or 'heading_aware_nadir'.")
+        raise ValueError(
+            f"Unsupported geotagging.mode={mode!r}. Expected 'nadir' or 'heading_aware_nadir'."
+        )
 
     return offset_latlon(drone_lat, drone_lon, east_offset_m, north_offset_m)
 

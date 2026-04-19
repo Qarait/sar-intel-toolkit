@@ -1,62 +1,44 @@
 # SAR-INTEL TOOLKIT
 
-This version runs person detection on video frames, fuses detections with simulated drone telemetry, and deduplicates repeated detections into confirmed tracks across frames.
+Simulation-first mission intelligence toolkit for search-and-rescue drone workflows.
 
-## Architecture
+It generates search grids, processes video detections, fuses detections with drone telemetry, tracks possible people across frames, and exports structured alerts, tracks, and map-ready GeoJSON.
 
-```
-Video → Frame Extraction → Person Detection (YOLO) → Geotag Fusion → Alert Output
-                                                ↓
-                                           Tracker (IoU + GPS) → Track Deduplication → Track Output
-```
+See CHANGELOG.md for version history and capability progression.
 
-The pipeline processes each video frame independently, detects people, fuses detections with simulated drone GPS, and optionally associates detections across frames into higher-level tracks.
+Project constraints and non-goals are documented in docs/LIMITATIONS.md.
 
-## New in v0.2
+Detailed system flow and module responsibilities are documented in docs/ARCHITECTURE.md.
 
-- **Track Association:** Links frame-level detections across time using bounding-box IoU, approximate GPS proximity, frame-gap limits, and minimum-hit thresholds.
-- **Dual Output:** Preserves `alerts.json` (one detection per frame, backward-compatible) and adds `tracks.json` (confirmed detection sequences).
-- **Validation:** Real street footage (3840×2160, 25fps, ~14 sec) produced **1699 frame-level alerts deduplicated into 29 confirmed tracks** — a ~58.6× reduction.
+## Current capabilities
 
-## New in v0.3.0
+- Search grid generation
+- Video person detection
+- Simulated or replayed drone telemetry
+- Approximate geotag fusion
+- Heading-aware nadir projection
+- Multi-frame tracking with optional Kalman prediction
+- Confidence-weighted track scoring
+- GeoJSON export
 
-- **Telemetry Replay Mode:** Load timestamped drone telemetry from CSV files instead of simulating GPS motion.
-- **Dynamic Altitude:** Altitude is now sourced from telemetry state rather than fixed config, enabling realistic geotagging with altitude variation.
-- **Time Interpolation:** Telemetry states (lat/lon/altitude/yaw/pitch/roll) are linearly interpolated by video/event time, enabling smooth position estimation between logged waypoints.
-- **Orientation Fields:** Yaw, pitch, and roll are parsed from telemetry for future pose-aware geotagging (currently parsed, not yet used in geolocation).
-- **Validation:** Both simulated and replay modes pass regression tests; output schemas unchanged.
+See CHANGELOG.md for release history.
 
-## New in v0.4.0
+## Design decisions
 
-- **Confidence-Weighted Track Scoring:** Each confirmed track now receives a `track_score` derived from mean confidence, peak confidence, and detection density across the track's lifetime.
-- **Track Classification:** Tracks are classified into `high_confidence_person`, `possible_person`, or `marginal_person` based on configurable score thresholds.
-- **New `tracks.json` Fields:** `duration_seconds`, `detection_density`, `track_score`, and `track_class` are added to every confirmed track. All existing fields are preserved for backward compatibility.
-- **Configurable Scoring:** The `track_scoring` section in `config.yaml` controls scoring weights and thresholds. Set `enabled: false` to omit scoring fields.
-- **No behavioral changes:** Detector, telemetry, geotagging, and alert schemas are unchanged. Track association logic is unchanged.
+- The toolkit is simulation-first to keep early testing reproducible.
+- `alerts.json` remains frame-level for backward compatibility.
+- `tracks.json` is the higher-level deduplicated output.
+- GeoJSON is generated from tracks, not raw alerts, to reduce clutter.
+- Heading-aware geotagging is implemented before full pose-aware projection to improve realism without overclaiming accuracy.
 
-## New in v0.5.0
+## Suggested review path
 
-- **GeoJSON Track Export:** Confirmed tracks can now be exported as a GeoJSON `FeatureCollection` for direct use in GIS and web-map tools.
-- **Map-Ready Geometry:** Each confirmed track becomes a GeoJSON `Point` feature using `[longitude, latitude]` coordinate order.
-- **Visualization Weighting:** Each feature includes `heatmap_weight`, which prefers `track_score` and falls back to confidence fields when scoring is unavailable.
-- **Configurable Filtering:** The `geojson` config block can drop low-score tracks or exclude `marginal_person` tracks from the export without changing `tracks.json`.
-- **No behavioral changes:** Detector behavior, tracker association, telemetry replay, geotagging, and `alerts.json` remain unchanged.
-
-## New in v0.6.0
-
-- **Kalman/SORT-style Prediction:** Tracks can now use a lightweight constant-velocity Kalman motion model to predict the next bounding box during brief missed detections.
-- **Improved Continuity:** Predicted bounding boxes help maintain a single track across short detector dropouts or unstable frame-to-frame localization.
-- **Same Association Signals:** IoU and GPS proximity are still used for matching; the Kalman layer only improves the bbox target used by IoU.
-- **Optional Metadata:** When Kalman tracking is enabled, confirmed tracks also include `motion_model`, `missed_frames`, and `max_consecutive_misses`.
-- **No identity claims:** This is not full re-identification and does not guarantee unique real-world people.
-
-## New in v0.7.0
-
-- **Heading-aware geotagging:** Detection offsets can now be rotated into world-space using telemetry `yaw_deg` before converting to latitude/longitude.
-- **Old mode preserved:** The original nadir-only geotagging path remains available as `geotagging.mode: nadir`.
-- **Selectable target point:** Geotagging can use either `bbox_center` or `bbox_bottom_center`, which is useful when approximating a standing person's ground contact point.
-- **Config-driven metadata:** Optional non-breaking geotagging metadata can be attached to detections before tracking when enabled.
-- **Scope remains safe:** This still assumes flat ground and does not yet attempt full pitch/roll/camera-pose photogrammetry.
+1. Read `config.replay.yaml`
+2. Run `python main.py --config config.replay.yaml`
+3. Inspect `output/alerts.json`
+4. Inspect `output/tracks.json`
+5. Load `output/tracks.geojson` into a map viewer
+6. Read `docs/LIMITATIONS.md`
 
 ## Run
 
@@ -67,12 +49,24 @@ pip install -r requirements.txt
 python main.py --config config.yaml
 ```
 
+Model weights are not required for offline mode. Online YOLO mode may download weights on first use.
+
 Offline-safe config:
 
 ```bash
 pip install -r requirements.txt
 python main.py --config config.offline.yaml
 ```
+
+## Validation
+
+```bash
+python -m pytest
+python main.py --config config.offline.yaml
+python main.py --config config.replay.yaml
+```
+
+Detailed validation notes and real-footage results are in docs/VALIDATION.md.
 
 ## Inputs
 
@@ -106,7 +100,7 @@ One entry per detected person per frame. Below is a real run on daylight street 
 - `timestamp`: UTC time of the alert (from video start_time_utc + frame_idx / fps)
 - `lat`, `lon`: estimated person location (nadir-camera projection from bbox and camera FOV)
 - `confidence`: YOLO detector confidence (0–1)
-- `type`: alert class ("possible_person" for this version)
+- `type`: alert class (currently `possible_person`)
 
 ### `output/tracks.json`
 
@@ -234,14 +228,6 @@ geotagging:
 - `target_point: bbox_bottom_center`: Uses the bottom-center of the detection box.
 - `include_geotag_metadata`: Adds `geotag_mode`, `geotag_yaw_deg`, and `geotag_target_point` to enriched detections before tracking when enabled.
 
-**Real Test Results:**
-- Clip: 3840×2160 street footage, 25 fps, ~14 sec
-- Frame-level detections: 1699 alerts in `alerts.json`
-- Confirmed tracks: 29 tracks in `tracks.json`
-- Reduction: ~58.6× fewer unique tracks than frame-level detections
-- Confidence range: 0.50–0.95 (realistic spread)
-- Coordinates: Clustered by track, drifting smoothly with simulated drone path
-
 ## Configuration
 
 ### Telemetry Modes
@@ -329,7 +315,7 @@ tracking:
     initial_uncertainty: 100.0
 ```
 
-- `motion_model`: Set to `none` for the v0.5-style tracker or `kalman` to enable constant-velocity bbox prediction
+- `motion_model`: Set to `none` for baseline greedy tracking or `kalman` to enable constant-velocity bbox prediction
 - `kalman.process_noise`: How quickly the predicted state is allowed to drift
 - `kalman.measurement_noise`: How strongly detections pull the predicted state back toward the observed bbox
 - `kalman.initial_uncertainty`: Starting covariance for new tracks
@@ -359,6 +345,5 @@ geojson:
 - Heading-aware geotagging uses yaw only. It does not yet perform full pitch/roll/camera-pose photogrammetry.
 - GeoJSON geometry uses `[longitude, latitude]` order to match the GeoJSON specification.
 - GeoJSON export is driven from confirmed tracks only. Alerts are not exported as GeoJSON.
-- `config.yaml` uses a pretrained Ultralytics detector. `config.offline.yaml` forces OpenCV HOG detection for offline operation.
+- `config.yaml` uses a pretrained Ultralytics detector and may download weights on first online use. `config.offline.yaml` forces OpenCV HOG detection for offline operation and does not require model weights.
 - SimpleTracker remains lightweight: greedy IoU + proximity matching with an optional NumPy Kalman prediction layer.
-- **v0.7 Validation:** Both `config.offline.yaml` (simulated) and `config.replay.yaml` (replay) pass end-to-end tests. Alert schema, detector behavior, tracker behavior, telemetry replay behavior, and GeoJSON schema remain unchanged.

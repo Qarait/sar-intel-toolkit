@@ -3,6 +3,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
+import numpy as np
+
 
 METERS_PER_DEGREE_LAT = 111_320.0
 
@@ -45,6 +47,69 @@ def _distance_m(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return math.hypot(east_m, north_m)
 
 
+def _bbox_to_xywh(bbox: Sequence[float]) -> Tuple[float, float, float, float]:
+    x1, y1, x2, y2 = [float(v) for v in bbox]
+    w = max(0.0, x2 - x1)
+    h = max(0.0, y2 - y1)
+    cx = x1 + (w / 2.0)
+    cy = y1 + (h / 2.0)
+    return cx, cy, w, h
+
+
+def _xywh_to_bbox(cx: float, cy: float, w: float, h: float) -> List[float]:
+    half_w = max(0.0, float(w)) / 2.0
+    half_h = max(0.0, float(h)) / 2.0
+    return [float(cx) - half_w, float(cy) - half_h, float(cx) + half_w, float(cy) + half_h]
+
+
+class KalmanBBoxFilter:
+    def __init__(
+        self,
+        bbox: Sequence[float],
+        process_noise: float = 1.0,
+        measurement_noise: float = 10.0,
+        initial_uncertainty: float = 100.0,
+    ) -> None:
+        cx, cy, w, h = _bbox_to_xywh(bbox)
+        self.state = np.array([[cx], [cy], [w], [h], [0.0], [0.0], [0.0], [0.0]], dtype=float)
+        self.covariance = np.eye(8, dtype=float) * float(initial_uncertainty)
+        self.process_noise = float(process_noise)
+        self.measurement_noise = float(measurement_noise)
+        self.measurement_matrix = np.zeros((4, 8), dtype=float)
+        self.measurement_matrix[0, 0] = 1.0
+        self.measurement_matrix[1, 1] = 1.0
+        self.measurement_matrix[2, 2] = 1.0
+        self.measurement_matrix[3, 3] = 1.0
+
+    def predict(self, dt: float = 1.0) -> None:
+        transition = np.eye(8, dtype=float)
+        transition[0, 4] = dt
+        transition[1, 5] = dt
+        transition[2, 6] = dt
+        transition[3, 7] = dt
+
+        process_cov = np.eye(8, dtype=float) * self.process_noise
+        self.state = transition @ self.state
+        self.covariance = transition @ self.covariance @ transition.T + process_cov
+
+    def update(self, bbox: Sequence[float]) -> None:
+        cx, cy, w, h = _bbox_to_xywh(bbox)
+        measurement = np.array([[cx], [cy], [w], [h]], dtype=float)
+        measurement_cov = np.eye(4, dtype=float) * self.measurement_noise
+
+        innovation = measurement - (self.measurement_matrix @ self.state)
+        innovation_cov = self.measurement_matrix @ self.covariance @ self.measurement_matrix.T + measurement_cov
+        kalman_gain = self.covariance @ self.measurement_matrix.T @ np.linalg.inv(innovation_cov)
+
+        self.state = self.state + (kalman_gain @ innovation)
+        identity = np.eye(8, dtype=float)
+        self.covariance = (identity - (kalman_gain @ self.measurement_matrix)) @ self.covariance
+
+    def predicted_bbox(self) -> List[float]:
+        cx, cy, w, h = self.state[:4, 0]
+        return _xywh_to_bbox(cx, cy, w, h)
+
+
 @dataclass
 class Track:
     track_id: int
@@ -62,13 +127,27 @@ class Track:
     last_lat: float = 0.0
     last_lon: float = 0.0
     missed_frames: int = 0
+    max_consecutive_misses: int = 0
+    motion_model: str = "none"
+    kalman_filter: Optional[KalmanBBoxFilter] = None
+    predicted_bbox_cache: Optional[List[float]] = None
     representative_bbox: List[float] = field(default_factory=list)
+
+    def predict(self, dt: float = 1.0) -> None:
+        if self.kalman_filter is None:
+            return
+        self.kalman_filter.predict(dt=dt)
+        self.predicted_bbox_cache = self.kalman_filter.predicted_bbox()
 
     def update(self, detection: Dict[str, Any], frame_idx: int, event_time: datetime) -> None:
         confidence = float(detection["confidence"])
         lat = float(detection["lat"])
         lon = float(detection["lon"])
         bbox = [float(v) for v in detection["bbox"]]
+
+        if self.kalman_filter is not None:
+            self.kalman_filter.update(bbox)
+            self.predicted_bbox_cache = self.kalman_filter.predicted_bbox()
 
         self.bbox = bbox
         self.last_frame = int(frame_idx)
@@ -85,6 +164,10 @@ class Track:
 
         if not self.representative_bbox or confidence >= self.max_confidence:
             self.representative_bbox = bbox
+
+    def mark_missed(self) -> None:
+        self.missed_frames += 1
+        self.max_consecutive_misses = max(self.max_consecutive_misses, self.missed_frames)
 
     @property
     def mean_confidence(self) -> float:
@@ -105,7 +188,7 @@ class Track:
         return self.weighted_lon_sum / self.confidence_weight_sum
 
     def to_summary(self) -> Dict[str, Any]:
-        return {
+        summary = {
             "track_id": self.track_id,
             "type": "possible_person_track",
             "first_seen": _format_utc(self.first_seen),
@@ -119,6 +202,11 @@ class Track:
             "mean_confidence": round(float(self.mean_confidence), 4),
             "representative_bbox": [round(float(v), 2) for v in self.representative_bbox],
         }
+        if self.motion_model == "kalman":
+            summary["motion_model"] = "kalman"
+            summary["missed_frames"] = self.missed_frames
+            summary["max_consecutive_misses"] = self.max_consecutive_misses
+        return summary
 
 
 def _compute_track_scoring(
@@ -174,15 +262,30 @@ class SimpleTracker:
         max_frame_gap: int = 10,
         max_position_distance_m: float = 12.0,
         min_hits: int = 3,
+        motion_model: str = "none",
+        kalman_config: Optional[Dict[str, Any]] = None,
     ) -> None:
         self.iou_threshold = float(iou_threshold)
         self.max_frame_gap = int(max_frame_gap)
         self.max_position_distance_m = float(max_position_distance_m)
         self.min_hits = int(min_hits)
+        normalized_motion_model = str(motion_model or "none").lower()
+        if normalized_motion_model not in {"none", "kalman"}:
+            raise ValueError(f"Unsupported tracking.motion_model: {motion_model!r}. Use 'none' or 'kalman'.")
+        self.motion_model = normalized_motion_model
+        self.kalman_config = dict(kalman_config or {})
         self.tracks: Dict[int, Track] = {}
         self._next_track_id = 1
 
     def _new_track(self, detection: Dict[str, Any], frame_idx: int, event_time: datetime) -> Track:
+        kalman_filter = None
+        if self.motion_model == "kalman":
+            kalman_filter = KalmanBBoxFilter(
+                bbox=detection["bbox"],
+                process_noise=float(self.kalman_config.get("process_noise", 1.0)),
+                measurement_noise=float(self.kalman_config.get("measurement_noise", 10.0)),
+                initial_uncertainty=float(self.kalman_config.get("initial_uncertainty", 100.0)),
+            )
         track = Track(
             track_id=self._next_track_id,
             bbox=[float(v) for v in detection["bbox"]],
@@ -190,6 +293,8 @@ class SimpleTracker:
             last_frame=int(frame_idx),
             first_seen=event_time,
             last_seen=event_time,
+            motion_model=self.motion_model,
+            kalman_filter=kalman_filter,
         )
         self._next_track_id += 1
         track.update(detection, frame_idx, event_time)
@@ -201,7 +306,8 @@ class SimpleTracker:
         if frame_gap < 0 or frame_gap > self.max_frame_gap:
             return None
 
-        iou = _bbox_iou(track.bbox, detection["bbox"])
+        candidate_bbox = track.predicted_bbox_cache if track.predicted_bbox_cache is not None else track.bbox
+        iou = _bbox_iou(candidate_bbox, detection["bbox"])
         distance = _distance_m(
             track.last_lat,
             track.last_lon,
@@ -233,6 +339,12 @@ class SimpleTracker:
                 event_time = datetime.fromisoformat(ts_str.replace("Z", "+00:00")).astimezone(timezone.utc)
             else:
                 event_time = datetime.now(timezone.utc)
+
+        if self.motion_model == "kalman":
+            for track in self.tracks.values():
+                if 0 <= (frame_idx - track.last_frame) <= self.max_frame_gap:
+                    track.predict(dt=1.0)
+
         assigned_tracks: Set[int] = set()
         enriched: List[Dict[str, Any]] = []
 
@@ -262,6 +374,13 @@ class SimpleTracker:
             enriched_detection = dict(detection)
             enriched_detection["track_id"] = best_track.track_id
             enriched.append(enriched_detection)
+
+        for track in self.tracks.values():
+            if track.track_id in assigned_tracks:
+                continue
+            frame_gap = int(frame_idx) - track.last_frame
+            if 0 < frame_gap <= self.max_frame_gap:
+                track.mark_missed()
 
         return enriched
 

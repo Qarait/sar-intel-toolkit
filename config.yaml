@@ -35,6 +35,15 @@ tracking:
   max_position_distance_m: 12.0
   min_hits: 3
 
+track_scoring:
+  enabled: true
+  high_confidence_threshold: 0.80
+  possible_confidence_threshold: 0.55
+  weights:
+    mean_confidence: 0.55
+    max_confidence: 0.25
+    detection_density: 0.20
+
 output:
   alerts_path: output/alerts.json
   tracks_path: output/tracks.json

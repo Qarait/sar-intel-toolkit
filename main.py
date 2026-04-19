@@ -9,6 +9,7 @@ import yaml
 
 from detector import PersonDetector
 from fusion import create_alert, estimate_target_position
+from geojson_export import write_tracks_geojson
 from planner import generate_grid
 from telemetry import TelemetryReplay, TelemetrySimulator
 from tracker import SimpleTracker
@@ -58,6 +59,7 @@ def run(config_path: str = "config.yaml") -> None:
     output_cfg = config["output"]
     tracking_cfg = config.get("tracking", {})
     scoring_cfg = config.get("track_scoring", {})
+    geojson_cfg = config.get("geojson", {})
 
     waypoints = generate_grid(
         min_lat=float(search_area["min_lat"]),
@@ -177,6 +179,11 @@ def run(config_path: str = "config.yaml") -> None:
         with open(tracks_path, "w", encoding="utf-8") as f:
             json.dump(tracks, f, indent=2)
         print(f"Saved {len(tracks)} confirmed tracks -> {tracks_path}")
+
+        if bool(geojson_cfg.get("enabled", False)):
+            geojson_path = str(geojson_cfg.get("tracks_path", "output/tracks.geojson"))
+            geojson_fc = write_tracks_geojson(tracks, geojson_path, config=geojson_cfg)
+            print(f"Saved {len(geojson_fc['features'])} GeoJSON track features -> {geojson_path}")
 
     print(f"Saved {len(waypoints)} waypoints -> {waypoints_path}")
     print(f"Saved {len(alerts)} alerts -> {alerts_path}")

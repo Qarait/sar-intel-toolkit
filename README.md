@@ -50,6 +50,14 @@ The pipeline processes each video frame independently, detects people, fuses det
 - **Optional Metadata:** When Kalman tracking is enabled, confirmed tracks also include `motion_model`, `missed_frames`, and `max_consecutive_misses`.
 - **No identity claims:** This is not full re-identification and does not guarantee unique real-world people.
 
+## New in v0.7.0
+
+- **Heading-aware geotagging:** Detection offsets can now be rotated into world-space using telemetry `yaw_deg` before converting to latitude/longitude.
+- **Old mode preserved:** The original nadir-only geotagging path remains available as `geotagging.mode: nadir`.
+- **Selectable target point:** Geotagging can use either `bbox_center` or `bbox_bottom_center`, which is useful when approximating a standing person's ground contact point.
+- **Config-driven metadata:** Optional non-breaking geotagging metadata can be attached to detections before tracking when enabled.
+- **Scope remains safe:** This still assumes flat ground and does not yet attempt full pitch/roll/camera-pose photogrammetry.
+
 ## Run
 
 Ultralytics-first config:
@@ -209,6 +217,23 @@ The geotagging step is intentionally approximate and suitable for simulation-fir
 
 For operational systems, geotagging should be replaced with proper camera calibration, ground-truth terrain data, and multi-sensor fusion.
 
+### Heading-aware Geotagging
+
+`heading_aware_nadir` uses telemetry `yaw_deg` to rotate image-space offsets into world-space east/north offsets before applying them to the drone position.
+
+```yaml
+geotagging:
+  mode: heading_aware_nadir   # nadir | heading_aware_nadir
+  target_point: bbox_center   # bbox_center | bbox_bottom_center
+  include_geotag_metadata: false
+```
+
+- `mode: nadir`: Preserves the original behavior where image right maps directly to east and image up maps directly to north.
+- `mode: heading_aware_nadir`: Rotates image-space offsets by telemetry `yaw_deg`, so the projected target moves with aircraft heading.
+- `target_point: bbox_center`: Uses the center of the detection box.
+- `target_point: bbox_bottom_center`: Uses the bottom-center of the detection box.
+- `include_geotag_metadata`: Adds `geotag_mode`, `geotag_yaw_deg`, and `geotag_target_point` to enriched detections before tracking when enabled.
+
 **Real Test Results:**
 - Clip: 3840×2160 street footage, 25 fps, ~14 sec
 - Frame-level detections: 1699 alerts in `alerts.json`
@@ -277,6 +302,7 @@ When using replay mode:
 - **lat/lon** are interpolated to smooth position between logged waypoints
 - **yaw/pitch/roll** are parsed and available for future pose-aware transformations (not yet used)
 - Current geotagging remains approximate and assumes flat ground and nadir camera
+- In `heading_aware_nadir` mode, `yaw_deg` is used to rotate image offsets into world-space east/north directions
 
 **Example:** Use `config.replay.yaml` with `sample_data/telemetry.csv` to test replay mode:
 
@@ -330,8 +356,9 @@ geojson:
 - Tracks are **confirmed detection sequences**, not guaranteed unique real-world people. Occlusion, out-of-frame motion, or detector instability can fragment one person into multiple tracks.
 - `track_class` is a confidence classification of the detection sequence — not a verified identity or guaranteed unique human.
 - Kalman/SORT-style prediction improves continuity across short missed detections, but it is not a full SORT implementation and does not use Hungarian assignment.
+- Heading-aware geotagging uses yaw only. It does not yet perform full pitch/roll/camera-pose photogrammetry.
 - GeoJSON geometry uses `[longitude, latitude]` order to match the GeoJSON specification.
 - GeoJSON export is driven from confirmed tracks only. Alerts are not exported as GeoJSON.
 - `config.yaml` uses a pretrained Ultralytics detector. `config.offline.yaml` forces OpenCV HOG detection for offline operation.
 - SimpleTracker remains lightweight: greedy IoU + proximity matching with an optional NumPy Kalman prediction layer.
-- **v0.6 Validation:** Both `config.offline.yaml` (simulated) and `config.replay.yaml` (replay) pass end-to-end tests. Alert schema, detector behavior, telemetry replay behavior, and geotagging remain unchanged.
+- **v0.7 Validation:** Both `config.offline.yaml` (simulated) and `config.replay.yaml` (replay) pass end-to-end tests. Alert schema, detector behavior, tracker behavior, telemetry replay behavior, and GeoJSON schema remain unchanged.

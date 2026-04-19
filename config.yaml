@@ -44,6 +44,12 @@ track_scoring:
     max_confidence: 0.25
     detection_density: 0.20
 
+geojson:
+  enabled: true
+  tracks_path: output/tracks.geojson
+  min_track_score: 0.0
+  include_marginal_tracks: true
+
 output:
   alerts_path: output/alerts.json
   tracks_path: output/tracks.json

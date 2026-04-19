@@ -34,6 +34,14 @@ The pipeline processes each video frame independently, detects people, fuses det
 - **Configurable Scoring:** The `track_scoring` section in `config.yaml` controls scoring weights and thresholds. Set `enabled: false` to omit scoring fields.
 - **No behavioral changes:** Detector, telemetry, geotagging, and alert schemas are unchanged. Track association logic is unchanged.
 
+## New in v0.5.0
+
+- **GeoJSON Track Export:** Confirmed tracks can now be exported as a GeoJSON `FeatureCollection` for direct use in GIS and web-map tools.
+- **Map-Ready Geometry:** Each confirmed track becomes a GeoJSON `Point` feature using `[longitude, latitude]` coordinate order.
+- **Visualization Weighting:** Each feature includes `heatmap_weight`, which prefers `track_score` and falls back to confidence fields when scoring is unavailable.
+- **Configurable Filtering:** The `geojson` config block can drop low-score tracks or exclude `marginal_person` tracks from the export without changing `tracks.json`.
+- **No behavioral changes:** Detector behavior, tracker association, telemetry replay, geotagging, and `alerts.json` remain unchanged.
+
 ## Run
 
 Ultralytics-first config:
@@ -60,6 +68,7 @@ python main.py --config config.offline.yaml
 - `sample_data/path.json` — search grid waypoints
 - `output/alerts.json` — frame-level detections (one per person per frame)
 - `output/tracks.json` — deduplicated confirmed person tracks
+- `output/tracks.geojson` — optional GeoJSON FeatureCollection of confirmed tracks for mapping tools
 
 ## Sample Output
 
@@ -140,6 +149,44 @@ Confirmed detection sequences deduplicated across frames. Each track summarizes 
 - `track_class`: Confidence classification — `high_confidence_person` (≥0.80), `possible_person` (≥0.55), or `marginal_person` (<0.55)
 
 > **Note:** `track_class` is a confidence classification of the detection sequence, not a verified identity or guaranteed unique human. A single person can appear as multiple tracks due to occlusion or out-of-frame motion. A single track may represent more than one person in dense scenes.
+
+### `output/tracks.geojson`
+
+GeoJSON export writes one feature per confirmed track. Geometry always uses `[longitude, latitude]`, never `[latitude, longitude]`.
+
+```json
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [-79.380667, 43.6489106]
+      },
+      "properties": {
+        "track_id": 1,
+        "type": "possible_person_track",
+        "track_class": "high_confidence_person",
+        "track_score": 0.9235,
+        "heatmap_weight": 0.9235,
+        "duration_seconds": 3.2,
+        "detection_density": 0.9625,
+        "hits": 78,
+        "mean_confidence": 0.8951,
+        "max_confidence": 0.956,
+        "first_seen": "2026-04-18T15:00:00Z",
+        "last_seen": "2026-04-18T15:00:03Z",
+        "first_frame": 0,
+        "last_frame": 80,
+        "representative_bbox": [2669.81, 627.01, 3839.31, 2144.29]
+      }
+    }
+  ]
+}
+```
+
+`heatmap_weight` can be used directly by map tools for heatmap layers, graduated symbols, or label filtering.
 
 ### Geotagging Limitations
 
@@ -240,10 +287,29 @@ tracking:
   min_hits: 3                          # Minimum detections before track is confirmed
 ```
 
+### GeoJSON Export
+
+Use the `geojson:` section to control optional GeoJSON output:
+
+```yaml
+geojson:
+  enabled: true
+  tracks_path: output/tracks.geojson
+  min_track_score: 0.0
+  include_marginal_tracks: true
+```
+
+- `enabled`: Writes GeoJSON output from confirmed tracks only
+- `tracks_path`: Destination for the GeoJSON FeatureCollection
+- `min_track_score`: Skips tracks below this score threshold when `track_score` is present
+- `include_marginal_tracks`: Excludes `marginal_person` tracks when set to `false`
+
 ## Notes
 
 - Tracks are **confirmed detection sequences**, not guaranteed unique real-world people. Occlusion, out-of-frame motion, or detector instability can fragment one person into multiple tracks.
 - `track_class` is a confidence classification of the detection sequence — not a verified identity or guaranteed unique human.
+- GeoJSON geometry uses `[longitude, latitude]` order to match the GeoJSON specification.
+- GeoJSON export is driven from confirmed tracks only. Alerts are not exported as GeoJSON.
 - `config.yaml` uses a pretrained Ultralytics detector. `config.offline.yaml` forces OpenCV HOG detection for offline operation.
 - SimpleTracker is lightweight and dependency-free: greedy IoU + proximity matching, no Kalman filter or Hungarian algorithm.
-- **v0.4 Validation:** Both `config.offline.yaml` (simulated) and `config.replay.yaml` (replay) pass end-to-end tests. Alert schema and track association behavior unchanged.
+- **v0.5 Validation:** Both `config.offline.yaml` (simulated) and `config.replay.yaml` (replay) pass end-to-end tests. GeoJSON export is additive only; alert schema and track association behavior are unchanged.

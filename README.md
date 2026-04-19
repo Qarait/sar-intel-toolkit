@@ -1,4 +1,4 @@
-# SAR-INTEL TOOLKIT — v0.2
+# SAR-INTEL TOOLKIT — v0.4
 
 This version runs person detection on video frames, fuses detections with simulated drone telemetry, and deduplicates repeated detections into confirmed tracks across frames.
 

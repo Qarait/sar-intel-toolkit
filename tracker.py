@@ -121,6 +121,46 @@ class Track:
         }
 
 
+def _compute_track_scoring(
+    track: "Track",
+    fps: float,
+    frame_stride: int,
+    scoring_config: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Compute confidence-weighted scoring fields for a confirmed track."""
+    duration_seconds = (track.last_frame - track.first_frame) / fps
+    expected_processed_frames = math.floor((track.last_frame - track.first_frame) / max(1, frame_stride)) + 1
+    detection_density = min(1.0, max(0.0, track.hits / expected_processed_frames))
+
+    weights = scoring_config.get("weights", {})
+    w_mean = float(weights.get("mean_confidence", 0.55))
+    w_max = float(weights.get("max_confidence", 0.25))
+    w_density = float(weights.get("detection_density", 0.20))
+
+    track_score = min(1.0, max(0.0,
+        w_mean * track.mean_confidence
+        + w_max * track.max_confidence
+        + w_density * detection_density
+    ))
+
+    high_t = float(scoring_config.get("high_confidence_threshold", 0.80))
+    possible_t = float(scoring_config.get("possible_confidence_threshold", 0.55))
+
+    if track_score >= high_t:
+        track_class = "high_confidence_person"
+    elif track_score >= possible_t:
+        track_class = "possible_person"
+    else:
+        track_class = "marginal_person"
+
+    return {
+        "duration_seconds": round(duration_seconds, 3),
+        "detection_density": round(detection_density, 4),
+        "track_score": round(track_score, 4),
+        "track_class": track_class,
+    }
+
+
 class SimpleTracker:
     """Lightweight tracker/deduplicator for MVP video detections.
 
@@ -185,8 +225,14 @@ class SimpleTracker:
         self,
         detections: List[Dict[str, Any]],
         frame_idx: int,
-        event_time: datetime,
+        event_time: Optional[datetime] = None,
     ) -> List[Dict[str, Any]]:
+        if event_time is None:
+            if detections:
+                ts_str = str(detections[0].get("timestamp", ""))
+                event_time = datetime.fromisoformat(ts_str.replace("Z", "+00:00")).astimezone(timezone.utc)
+            else:
+                event_time = datetime.now(timezone.utc)
         assigned_tracks: Set[int] = set()
         enriched: List[Dict[str, Any]] = []
 
@@ -219,7 +265,23 @@ class SimpleTracker:
 
         return enriched
 
-    def confirmed_tracks(self) -> List[Dict[str, Any]]:
-        summaries = [track.to_summary() for track in self.tracks.values() if track.hits >= self.min_hits]
+    def confirmed_tracks(
+        self,
+        fps: float = 30.0,
+        frame_stride: int = 1,
+        scoring_config: Optional[Dict[str, Any]] = None,
+    ) -> List[Dict[str, Any]]:
+        summaries = []
+        for track in self.tracks.values():
+            if track.hits < self.min_hits:
+                continue
+            summary = track.to_summary()
+            if scoring_config is not None and scoring_config.get("enabled", True):
+                scoring_fields = _compute_track_scoring(track, fps, frame_stride, scoring_config)
+                summary["duration_seconds"] = scoring_fields["duration_seconds"]
+                summary["detection_density"] = scoring_fields["detection_density"]
+                summary["track_score"] = scoring_fields["track_score"]
+                summary["track_class"] = scoring_fields["track_class"]
+            summaries.append(summary)
         summaries.sort(key=lambda item: (item["first_frame"], item["track_id"]))
         return summaries

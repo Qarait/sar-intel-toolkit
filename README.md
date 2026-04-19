@@ -26,6 +26,14 @@ The pipeline processes each video frame independently, detects people, fuses det
 - **Orientation Fields:** Yaw, pitch, and roll are parsed from telemetry for future pose-aware geotagging (currently parsed, not yet used in geolocation).
 - **Validation:** Both simulated and replay modes pass regression tests; output schemas unchanged.
 
+## New in v0.4.0
+
+- **Confidence-Weighted Track Scoring:** Each confirmed track now receives a `track_score` derived from mean confidence, peak confidence, and detection density across the track's lifetime.
+- **Track Classification:** Tracks are classified into `high_confidence_person`, `possible_person`, or `marginal_person` based on configurable score thresholds.
+- **New `tracks.json` Fields:** `duration_seconds`, `detection_density`, `track_score`, and `track_class` are added to every confirmed track. All existing fields are preserved for backward compatibility.
+- **Configurable Scoring:** The `track_scoring` section in `config.yaml` controls scoring weights and thresholds. Set `enabled: false` to omit scoring fields.
+- **No behavioral changes:** Detector, telemetry, geotagging, and alert schemas are unchanged. Track association logic is unchanged.
+
 ## Run
 
 Ultralytics-first config:
@@ -93,7 +101,11 @@ Confirmed detection sequences deduplicated across frames. Each track summarizes 
     "lon": -79.380667,
     "max_confidence": 0.956,
     "mean_confidence": 0.8951,
-    "representative_bbox": [2669.81, 627.01, 3839.31, 2144.29]
+    "representative_bbox": [2669.81, 627.01, 3839.31, 2144.29],
+    "duration_seconds": 3.2,
+    "detection_density": 0.9625,
+    "track_score": 0.9235,
+    "track_class": "high_confidence_person"
   },
   {
     "track_id": 2,
@@ -114,7 +126,7 @@ Confirmed detection sequences deduplicated across frames. Each track summarizes 
 
 **Track Fields:**
 - `track_id`: Unique identifier within the run
-- `type`: "possible_person_track"
+- `type`: "possible_person_track" (preserved for backward compatibility)
 - `first_seen`, `last_seen`: UTC timestamps of first and last frame
 - `first_frame`, `last_frame`: Frame indices
 - `hits`: Number of frames in which this track was detected
@@ -122,6 +134,12 @@ Confirmed detection sequences deduplicated across frames. Each track summarizes 
 - `max_confidence`: Peak detector confidence in the track
 - `mean_confidence`: Average detector confidence across all detections
 - `representative_bbox`: Bounding box with highest confidence
+- `duration_seconds`: Track lifespan in seconds (`(last_frame - first_frame) / fps`)
+- `detection_density`: Fraction of processed frames in which the track was detected (0–1)
+- `track_score`: Weighted score combining mean confidence, peak confidence, and detection density (0–1)
+- `track_class`: Confidence classification — `high_confidence_person` (≥0.80), `possible_person` (≥0.55), or `marginal_person` (<0.55)
+
+> **Note:** `track_class` is a confidence classification of the detection sequence, not a verified identity or guaranteed unique human. A single person can appear as multiple tracks due to occlusion or out-of-frame motion. A single track may represent more than one person in dense scenes.
 
 ### Geotagging Limitations
 
@@ -225,6 +243,7 @@ tracking:
 ## Notes
 
 - Tracks are **confirmed detection sequences**, not guaranteed unique real-world people. Occlusion, out-of-frame motion, or detector instability can fragment one person into multiple tracks.
+- `track_class` is a confidence classification of the detection sequence — not a verified identity or guaranteed unique human.
 - `config.yaml` uses a pretrained Ultralytics detector. `config.offline.yaml` forces OpenCV HOG detection for offline operation.
 - SimpleTracker is lightweight and dependency-free: greedy IoU + proximity matching, no Kalman filter or Hungarian algorithm.
-- **v0.3 Validation:** Both `config.offline.yaml` (simulated) and `config.replay.yaml` (replay) pass end-to-end tests. Alert and track schemas are unchanged across versions.
+- **v0.4 Validation:** Both `config.offline.yaml` (simulated) and `config.replay.yaml` (replay) pass end-to-end tests. Alert schema and track association behavior unchanged.

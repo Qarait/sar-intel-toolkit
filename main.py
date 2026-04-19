@@ -57,6 +57,7 @@ def run(config_path: str = "config.yaml") -> None:
     camera_cfg = config["camera"]
     output_cfg = config["output"]
     tracking_cfg = config.get("tracking", {})
+    scoring_cfg = config.get("track_scoring", {})
 
     waypoints = generate_grid(
         min_lat=float(search_area["min_lat"]),
@@ -166,7 +167,11 @@ def run(config_path: str = "config.yaml") -> None:
         json.dump(alerts, f, indent=2)
 
     if tracker is not None:
-        tracks = tracker.confirmed_tracks()
+        tracks = tracker.confirmed_tracks(
+            fps=fps,
+            frame_stride=frame_stride,
+            scoring_config=scoring_cfg if scoring_cfg else None,
+        )
         tracks_path = output_cfg.get("tracks_path", "output/tracks.json")
         ensure_parent_dir(tracks_path)
         with open(tracks_path, "w", encoding="utf-8") as f:

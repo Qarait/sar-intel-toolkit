@@ -18,6 +18,14 @@ The pipeline processes each video frame independently, detects people, fuses det
 - **Dual Output:** Preserves `alerts.json` (one detection per frame, backward-compatible) and adds `tracks.json` (confirmed detection sequences).
 - **Validation:** Real street footage (3840×2160, 25fps, ~14 sec) produced **1699 frame-level alerts deduplicated into 29 confirmed tracks** — a ~58.6× reduction.
 
+## New in v0.3.0
+
+- **Telemetry Replay Mode:** Load timestamped drone telemetry from CSV files instead of simulating GPS motion.
+- **Dynamic Altitude:** Altitude is now sourced from telemetry state rather than fixed config, enabling realistic geotagging with altitude variation.
+- **Time Interpolation:** Telemetry states (lat/lon/altitude/yaw/pitch/roll) are linearly interpolated by video/event time, enabling smooth position estimation between logged waypoints.
+- **Orientation Fields:** Yaw, pitch, and roll are parsed from telemetry for future pose-aware geotagging (currently parsed, not yet used in geolocation).
+- **Validation:** Both simulated and replay modes pass regression tests; output schemas unchanged.
+
 ## Run
 
 Ultralytics-first config:
@@ -135,6 +143,71 @@ For operational systems, geotagging should be replaced with proper camera calibr
 
 ## Configuration
 
+### Telemetry Modes
+
+The toolkit supports two telemetry modes: **simulated** (default) and **replay**.
+
+#### Simulated Mode (Default)
+
+Simulates GPS motion along a pre-planned grid at constant speed:
+
+```yaml
+telemetry:
+  mode: simulated
+  replay_path: sample_data/telemetry.csv
+```
+
+- `mode`: Set to `"simulated"` to interpolate drone position along waypoints at constant speed
+- `replay_path`: Ignored in simulated mode; included for config portability
+
+#### Replay Mode
+
+Loads timestamped telemetry from a CSV file and interpolates states by video/event time:
+
+```yaml
+telemetry:
+  mode: replay
+  replay_path: sample_data/telemetry.csv
+```
+
+- `mode`: Set to `"replay"` to load and interpolate real or logged drone telemetry
+- `replay_path`: Path to CSV file with timestamped telemetry (required)
+
+**CSV Format:**
+
+```
+timestamp,lat,lon,altitude_m,yaw_deg,pitch_deg,roll_deg
+2026-04-17T19:30:00.000Z,43.649000,-79.381000,60.0,90.0,0.0,0.0
+2026-04-17T19:30:02.000Z,43.649000,-79.380800,60.0,90.0,0.0,0.0
+2026-04-17T19:30:04.000Z,43.649000,-79.380600,60.0,90.0,0.0,0.0
+```
+
+**CSV Fields:**
+- `timestamp`: ISO 8601 timestamp (UTC, required)
+- `lat`, `lon`: Latitude and longitude (decimal degrees, required)
+- `altitude_m`: Altitude in meters (required; used for nadir geolocation)
+- `yaw_deg`, `pitch_deg`, `roll_deg`: Drone orientation in degrees (required; parsed for future pose-aware geotagging)
+
+**Interpolation Behavior:**
+- Telemetry is linearly interpolated between logged rows based on video/event time
+- Times before the first row use the first row's state
+- Times after the last row use the last row's state (safe for short logs with longer videos)
+- All six fields (lat, lon, altitude, yaw, pitch, roll) are interpolated
+
+**Geotagging with Replay:**
+
+When using replay mode:
+- **Altitude** from the CSV is used for nadir-camera geolocation, enabling realistic vertical accuracy variation
+- **lat/lon** are interpolated to smooth position between logged waypoints
+- **yaw/pitch/roll** are parsed and available for future pose-aware transformations (not yet used)
+- Current geotagging remains approximate and assumes flat ground and nadir camera
+
+**Example:** Use `config.replay.yaml` with `sample_data/telemetry.csv` to test replay mode:
+
+```bash
+python main.py --config config.replay.yaml
+```
+
 ### Tracking Parameters
 
 Edit the `tracking:` section in `config.yaml` to tune track association:
@@ -154,3 +227,4 @@ tracking:
 - Tracks are **confirmed detection sequences**, not guaranteed unique real-world people. Occlusion, out-of-frame motion, or detector instability can fragment one person into multiple tracks.
 - `config.yaml` uses a pretrained Ultralytics detector. `config.offline.yaml` forces OpenCV HOG detection for offline operation.
 - SimpleTracker is lightweight and dependency-free: greedy IoU + proximity matching, no Kalman filter or Hungarian algorithm.
+- **v0.3 Validation:** Both `config.offline.yaml` (simulated) and `config.replay.yaml` (replay) pass end-to-end tests. Alert and track schemas are unchanged across versions.

@@ -11,7 +11,7 @@ mission:
   drone_speed_mps: 8.0
 
 telemetry:
-  mode: simulated
+  mode: replay
   replay_path: sample_data/telemetry.csv
 
 video:

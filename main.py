@@ -10,7 +10,7 @@ import yaml
 from detector import PersonDetector
 from fusion import create_alert, estimate_target_position
 from planner import generate_grid
-from telemetry import TelemetrySimulator
+from telemetry import TelemetryReplay, TelemetrySimulator
 from tracker import SimpleTracker
 
 
@@ -25,6 +25,26 @@ def parse_utc(ts: str) -> datetime:
 
 def ensure_parent_dir(file_path: str) -> None:
     Path(file_path).parent.mkdir(parents=True, exist_ok=True)
+
+
+def build_telemetry(config: Dict[str, Any], waypoints: Any) -> Any:
+    mission = config["mission"]
+    telemetry_cfg = config.get("telemetry", {}) or {}
+    mode = str(telemetry_cfg.get("mode", "simulated")).lower()
+
+    if mode == "simulated":
+        return TelemetrySimulator(
+            waypoints=waypoints,
+            speed_mps=float(mission["drone_speed_mps"]),
+        )
+
+    if mode == "replay":
+        replay_path = telemetry_cfg.get("replay_path")
+        if not replay_path:
+            raise ValueError("telemetry.mode is 'replay' but telemetry.replay_path is missing.")
+        return TelemetryReplay(str(replay_path))
+
+    raise ValueError(f"Unsupported telemetry.mode: {mode!r}. Use 'simulated' or 'replay'.")
 
 
 def run(config_path: str = "config.yaml") -> None:
@@ -53,10 +73,7 @@ def run(config_path: str = "config.yaml") -> None:
     with open(waypoints_path, "w", encoding="utf-8") as f:
         json.dump(waypoints, f, indent=2)
 
-    telemetry = TelemetrySimulator(
-        waypoints=waypoints,
-        speed_mps=float(mission["drone_speed_mps"]),
-    )
+    telemetry = build_telemetry(config, waypoints)
 
     detector = PersonDetector(
         model_path=str(detector_cfg["model"]),
@@ -101,7 +118,10 @@ def run(config_path: str = "config.yaml") -> None:
         # frame_idx is the absolute source-video frame index, so frame_idx / fps remains correct even when frame_stride skips processing some frames.
         t_seconds = frame_idx / fps
         event_time = mission_start + timedelta(seconds=t_seconds)
-        drone_lat, drone_lon = telemetry.position_at(t_seconds)
+        drone_state = telemetry.state_at(t_seconds, event_time)
+        drone_lat = float(drone_state["lat"])
+        drone_lon = float(drone_state["lon"])
+        altitude_m = float(drone_state.get("altitude_m", mission["altitude_m"]))
 
         raw_detections = detector.detect(frame)
         detections = []
@@ -112,7 +132,7 @@ def run(config_path: str = "config.yaml") -> None:
                 drone_lon=drone_lon,
                 bbox=detection["bbox"],
                 frame_shape=frame.shape,
-                altitude_m=float(mission["altitude_m"]),
+                altitude_m=altitude_m,
                 horizontal_fov_deg=float(camera_cfg["horizontal_fov_deg"]),
                 vertical_fov_deg=float(camera_cfg["vertical_fov_deg"]),
             )

@@ -10,6 +10,10 @@ mission:
   forward_step_m: 20.0
   drone_speed_mps: 8.0
 
+telemetry:
+  mode: simulated
+  replay_path: sample_data/telemetry.csv
+
 video:
   path: sample_data/video.mp4
   frame_stride: 1

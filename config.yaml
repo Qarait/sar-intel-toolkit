@@ -34,6 +34,11 @@ tracking:
   max_frame_gap: 10
   max_position_distance_m: 12.0
   min_hits: 3
+  motion_model: kalman
+  kalman:
+    process_noise: 1.0
+    measurement_noise: 10.0
+    initial_uncertainty: 100.0
 
 track_scoring:
   enabled: true

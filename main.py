@@ -91,6 +91,8 @@ def run(config_path: str = "config.yaml") -> None:
             max_frame_gap=int(tracking_cfg.get("max_frame_gap", 10)),
             max_position_distance_m=float(tracking_cfg.get("max_position_distance_m", 12.0)),
             min_hits=int(tracking_cfg.get("min_hits", 3)),
+            motion_model=str(tracking_cfg.get("motion_model", "none")),
+            kalman_config=tracking_cfg.get("kalman", {}),
         )
 
     video_path = video_cfg["path"]

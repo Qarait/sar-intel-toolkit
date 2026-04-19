@@ -42,6 +42,14 @@ The pipeline processes each video frame independently, detects people, fuses det
 - **Configurable Filtering:** The `geojson` config block can drop low-score tracks or exclude `marginal_person` tracks from the export without changing `tracks.json`.
 - **No behavioral changes:** Detector behavior, tracker association, telemetry replay, geotagging, and `alerts.json` remain unchanged.
 
+## New in v0.6.0
+
+- **Kalman/SORT-style Prediction:** Tracks can now use a lightweight constant-velocity Kalman motion model to predict the next bounding box during brief missed detections.
+- **Improved Continuity:** Predicted bounding boxes help maintain a single track across short detector dropouts or unstable frame-to-frame localization.
+- **Same Association Signals:** IoU and GPS proximity are still used for matching; the Kalman layer only improves the bbox target used by IoU.
+- **Optional Metadata:** When Kalman tracking is enabled, confirmed tracks also include `motion_model`, `missed_frames`, and `max_consecutive_misses`.
+- **No identity claims:** This is not full re-identification and does not guarantee unique real-world people.
+
 ## Run
 
 Ultralytics-first config:
@@ -147,6 +155,9 @@ Confirmed detection sequences deduplicated across frames. Each track summarizes 
 - `detection_density`: Fraction of processed frames in which the track was detected (0–1)
 - `track_score`: Weighted score combining mean confidence, peak confidence, and detection density (0–1)
 - `track_class`: Confidence classification — `high_confidence_person` (≥0.80), `possible_person` (≥0.55), or `marginal_person` (<0.55)
+- `motion_model`: Optional tracking motion model used for the track (`"kalman"` when enabled)
+- `missed_frames`: Current count of consecutive processed frames missed at export time when Kalman prediction is enabled
+- `max_consecutive_misses`: Largest consecutive miss streak bridged by prediction during the track lifetime
 
 > **Note:** `track_class` is a confidence classification of the detection sequence, not a verified identity or guaranteed unique human. A single person can appear as multiple tracks due to occlusion or out-of-frame motion. A single track may represent more than one person in dense scenes.
 
@@ -285,7 +296,17 @@ tracking:
   max_frame_gap: 10                    # Max frames allowed between detections in one track
   max_position_distance_m: 12.0        # Max GPS distance for same-track match
   min_hits: 3                          # Minimum detections before track is confirmed
+  motion_model: kalman                 # none | kalman
+  kalman:
+    process_noise: 1.0
+    measurement_noise: 10.0
+    initial_uncertainty: 100.0
 ```
+
+- `motion_model`: Set to `none` for the v0.5-style tracker or `kalman` to enable constant-velocity bbox prediction
+- `kalman.process_noise`: How quickly the predicted state is allowed to drift
+- `kalman.measurement_noise`: How strongly detections pull the predicted state back toward the observed bbox
+- `kalman.initial_uncertainty`: Starting covariance for new tracks
 
 ### GeoJSON Export
 
@@ -308,8 +329,9 @@ geojson:
 
 - Tracks are **confirmed detection sequences**, not guaranteed unique real-world people. Occlusion, out-of-frame motion, or detector instability can fragment one person into multiple tracks.
 - `track_class` is a confidence classification of the detection sequence — not a verified identity or guaranteed unique human.
+- Kalman/SORT-style prediction improves continuity across short missed detections, but it is not a full SORT implementation and does not use Hungarian assignment.
 - GeoJSON geometry uses `[longitude, latitude]` order to match the GeoJSON specification.
 - GeoJSON export is driven from confirmed tracks only. Alerts are not exported as GeoJSON.
 - `config.yaml` uses a pretrained Ultralytics detector. `config.offline.yaml` forces OpenCV HOG detection for offline operation.
-- SimpleTracker is lightweight and dependency-free: greedy IoU + proximity matching, no Kalman filter or Hungarian algorithm.
-- **v0.5 Validation:** Both `config.offline.yaml` (simulated) and `config.replay.yaml` (replay) pass end-to-end tests. GeoJSON export is additive only; alert schema and track association behavior are unchanged.
+- SimpleTracker remains lightweight: greedy IoU + proximity matching with an optional NumPy Kalman prediction layer.
+- **v0.6 Validation:** Both `config.offline.yaml` (simulated) and `config.replay.yaml` (replay) pass end-to-end tests. Alert schema, detector behavior, telemetry replay behavior, and geotagging remain unchanged.

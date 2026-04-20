@@ -1,6 +1,23 @@
 # Changelog
 
-## v0.7.0 — Heading-aware geotagging
+## v0.7.2 — Release verification and claims matrix
+
+Added:
+- Synthetic acceptance pipeline test
+- Release verification script
+- Claims matrix mapping README claims to tests/docs
+- Acceptance fixtures for telemetry and detections
+
+Fixed:
+- Planner floating-point terminal waypoint duplication bug
+
+Validation:
+- compileall passes
+- pytest passes
+- offline config passes
+- replay config passes
+
+## v0.7 — heading-aware geotagging
 
 Added:
 - `geotagging.mode: nadir | heading_aware_nadir`
@@ -18,7 +35,7 @@ Limitations:
 - Still assumes flat ground
 - Does not yet perform full pitch/roll/camera-pose photogrammetry
 
-## v0.6.0 — Kalman/SORT-style track prediction
+## v0.6 — Kalman/SORT-style prediction
 
 Added:
 - Lightweight constant-velocity Kalman motion model for next-bbox prediction during brief missed detections
@@ -34,7 +51,7 @@ Limitations:
 - Not full re-identification
 - Does not guarantee unique real-world people
 
-## v0.5.0 — GeoJSON track export
+## v0.5 — GeoJSON export
 
 Added:
 - GeoJSON `FeatureCollection` export for confirmed tracks
@@ -52,7 +69,7 @@ Limitations:
 - GeoJSON export is driven from confirmed tracks only
 - Alerts are not exported as GeoJSON
 
-## v0.4.0 — Confidence-weighted track scoring
+## v0.4 — confidence-weighted track scoring
 
 Added:
 - `track_score` derived from mean confidence, peak confidence, and detection density
@@ -71,7 +88,7 @@ Limitations:
 - Confidence classes are not identity claims
 - Scoring can be disabled to omit added metadata
 
-## v0.3.0 — Telemetry replay
+## v0.3 — telemetry log replay
 
 Added:
 - `telemetry.mode: replay` for timestamped CSV telemetry playback
@@ -87,7 +104,7 @@ Limitations:
 - Pose fields are parsed but not yet used for full pose-aware geolocation
 - Geotagging remains approximate and flat-ground
 
-## v0.2.0 — Track association and deduplicated outputs
+## v0.2 — tracking and deduplication
 
 Added:
 - Track association across frames using bounding-box IoU, approximate GPS proximity, frame-gap limits, and minimum-hit thresholds
@@ -100,3 +117,20 @@ Unchanged:
 Limitations:
 - Tracks represent confirmed detection sequences, not guaranteed unique people
 - One person can fragment into multiple tracks in difficult scenes
+
+## v0.1 — frame-level SAR alert pipeline
+
+Added:
+- Search-area configuration and lawnmower grid planning
+- Frame-by-frame person detection over video input
+- Approximate geotag fusion from drone position, altitude, and camera field of view
+- Frame-level `alerts.json` output for possible-person detections
+
+Unchanged:
+- No multi-frame deduplication yet
+- No telemetry replay yet
+- No track scoring or GeoJSON export yet
+
+Limitations:
+- Alerts are raw frame-level detections, so the same person can appear many times
+- Geotagging is approximate and assumes a nadir-style flat-ground projection

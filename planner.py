@@ -33,7 +33,7 @@ def _build_row(lat: float, min_lon: float, max_lon: float, altitude_m: float, fo
         })
         lon += lon_step
 
-    if not row_points or row_points[-1]["lon"] < max_lon:
+    if not row_points or row_points[-1]["lon"] < max_lon - 1e-12:
         row_points.append({
             "lat": lat,
             "lon": max_lon,

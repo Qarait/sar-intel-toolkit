@@ -5,6 +5,7 @@
 | Generates search grids | `tests/test_planner.py` |
 | Supports telemetry replay | `tests/test_telemetry_replay.py` |
 | Supports heading-aware geotagging | `tests/test_fusion_heading.py` |
+| Supports pose-aware flat-ground geotagging | `tests/test_fusion_pose.py` |
 | Tracks detections across frames | `tests/test_tracker_scoring.py` |
 | Supports Kalman missed-frame continuity | `tests/test_tracker_kalman.py` |
 | Scores confirmed tracks | `tests/test_tracker_scoring.py` |

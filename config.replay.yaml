@@ -30,9 +30,10 @@ camera:
   vertical_fov_deg: 49.0
 
 geotagging:
-  mode: heading_aware_nadir
-  target_point: bbox_center
+  mode: pose_aware_flat_ground
+  target_point: bbox_bottom_center
   include_geotag_metadata: false
+  pose_fallback_mode: heading_aware_nadir
 
 tracking:
   enabled: true

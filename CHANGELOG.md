@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.9.0 — Pose-aware flat-ground geotagging
+
+Added:
+- Optional `pose_aware_flat_ground` geotagging mode
+- Geotagging model design documentation
+- Pose-aware geotagging tests covering yaw, pitch, roll, invalid geometry, and failure paths
+
+Fixed:
+- Explicitly handled invalid pose-aware ground intersections
+- Added optional pose-aware fallback configuration to `heading_aware_nadir` or `nadir`
+
+Unchanged:
+- Detector behavior
+- Tracker behavior
+- Telemetry replay behavior
+- `alerts.json` schema
+- `tracks.json` schema
+- `tracks.geojson` schema
+
 ## v0.8.3 — Tracker validation and claims-matrix fix
 
 Added:

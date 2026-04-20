@@ -20,6 +20,12 @@ Mission profile presets and their scope are documented in docs/MISSION_PROFILES.
 
 Near-term and longer-term project priorities are documented in docs/ROADMAP.md.
 
+## New in v0.9.0
+
+An optional `pose_aware_flat_ground` geotagging mode is available.
+
+It uses telemetry `yaw_deg`, `pitch_deg`, and `roll_deg` to rotate an image ray onto a flat ground plane. This improves realism when aircraft attitude is available, but it still assumes flat ground and camera-model simplifications rather than terrain-aware photogrammetry.
+
 ## Proof stack
 
 - Automated tests live in `tests/`.
@@ -262,18 +268,25 @@ For operational systems, geotagging should be replaced with proper camera calibr
 
 `heading_aware_nadir` uses telemetry `yaw_deg` to rotate image-space offsets into world-space east/north offsets before applying them to the drone position.
 
+`pose_aware_flat_ground` is also available as an optional mode. It uses telemetry `yaw_deg`, `pitch_deg`, and `roll_deg` to rotate an image ray onto a flat ground plane. This is still approximate, assumes flat ground and a simplified downward-facing camera model, and is not terrain-aware photogrammetry.
+
 ```yaml
 geotagging:
-  mode: heading_aware_nadir   # nadir | heading_aware_nadir
-  target_point: bbox_center   # bbox_center | bbox_bottom_center
+  mode: pose_aware_flat_ground   # nadir | heading_aware_nadir | pose_aware_flat_ground
+  target_point: bbox_bottom_center   # bbox_center | bbox_bottom_center
   include_geotag_metadata: false
+  pose_fallback_mode: heading_aware_nadir
 ```
 
 - `mode: nadir`: Preserves the original behavior where image right maps directly to east and image up maps directly to north.
 - `mode: heading_aware_nadir`: Rotates image-space offsets by telemetry `yaw_deg`, so the projected target moves with aircraft heading.
+- `mode: pose_aware_flat_ground`: Rotates a camera ray using telemetry yaw, pitch, and roll and intersects it with a flat ground plane. It is more realistic than nadir-only offset rotation but still depends on flat-ground and camera-model assumptions.
 - `target_point: bbox_center`: Uses the center of the detection box.
 - `target_point: bbox_bottom_center`: Uses the bottom-center of the detection box.
 - `include_geotag_metadata`: Adds `geotag_mode`, `geotag_yaw_deg`, and `geotag_target_point` to enriched detections before tracking when enabled.
+- `pose_fallback_mode`: Optional fallback for `pose_aware_flat_ground` when the projected ray does not hit the flat ground plane in a valid way. Supported values are `nadir` and `heading_aware_nadir`.
+
+See `docs/GEOTAGGING_MODEL.md` for the coordinate-frame and angle-convention assumptions behind the geotagging modes.
 
 ## Configuration
 
@@ -320,7 +333,7 @@ timestamp,lat,lon,altitude_m,yaw_deg,pitch_deg,roll_deg
 - `timestamp`: ISO 8601 timestamp (UTC, required)
 - `lat`, `lon`: Latitude and longitude (decimal degrees, required)
 - `altitude_m`: Altitude in meters (required; used for nadir geolocation)
-- `yaw_deg`, `pitch_deg`, `roll_deg`: Drone orientation in degrees (required; parsed for future pose-aware geotagging)
+- `yaw_deg`, `pitch_deg`, `roll_deg`: Drone orientation in degrees (required; used by `pose_aware_flat_ground` and still subject to the documented flat-ground assumptions)
 
 **Interpolation Behavior:**
 - Telemetry is linearly interpolated between logged rows based on video/event time
@@ -333,7 +346,7 @@ timestamp,lat,lon,altitude_m,yaw_deg,pitch_deg,roll_deg
 When using replay mode:
 - **Altitude** from the CSV is used for nadir-camera geolocation, enabling realistic vertical accuracy variation
 - **lat/lon** are interpolated to smooth position between logged waypoints
-- **yaw/pitch/roll** are parsed and available for future pose-aware transformations (not yet used)
+- **yaw/pitch/roll** are available for `pose_aware_flat_ground` when a flat-ground pose-aware projection is desired
 - Current geotagging remains approximate and assumes flat ground and nadir camera
 - In `heading_aware_nadir` mode, `yaw_deg` is used to rotate image offsets into world-space east/north directions
 

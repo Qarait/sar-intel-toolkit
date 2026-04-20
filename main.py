@@ -288,6 +288,14 @@ def run(config_path: str = "config.yaml") -> RunSummary:
     geotag_mode = str(geotagging_cfg.get("mode", "nadir"))
     geotag_target_point = str(geotagging_cfg.get("target_point", "bbox_center"))
     include_geotag_metadata = bool(geotagging_cfg.get("include_geotag_metadata", False))
+    pose_fallback_mode = geotagging_cfg.get("pose_fallback_mode")
+    if pose_fallback_mode is not None:
+        pose_fallback_mode = str(pose_fallback_mode)
+        if pose_fallback_mode not in {"nadir", "heading_aware_nadir"}:
+            raise ValueError(
+                "geotagging.pose_fallback_mode must be 'nadir' or 'heading_aware_nadir' when set, "
+                f"got {pose_fallback_mode!r}."
+            )
 
     while True:
         ok, frame = cap.read()
@@ -308,23 +316,47 @@ def run(config_path: str = "config.yaml") -> RunSummary:
         drone_lon = drone_state.lon
         altitude_m = drone_state.altitude_m
         yaw_deg = drone_state.yaw_deg
+        pitch_deg = drone_state.pitch_deg
+        roll_deg = drone_state.roll_deg
 
         raw_detections: List[Detection] = detector.detect(frame)
         detections: List[Dict[str, Any]] = []
 
         for detection in raw_detections:
-            target_lat, target_lon = estimate_target_position_with_mode(
-                drone_lat=drone_lat,
-                drone_lon=drone_lon,
-                bbox=detection.bbox,
-                frame_shape=frame.shape,
-                altitude_m=altitude_m,
-                horizontal_fov_deg=float(camera_cfg["horizontal_fov_deg"]),
-                vertical_fov_deg=float(camera_cfg["vertical_fov_deg"]),
-                mode=geotag_mode,
-                yaw_deg=yaw_deg,
-                target_point=geotag_target_point,
-            )
+            effective_geotag_mode = geotag_mode
+            try:
+                target_lat, target_lon = estimate_target_position_with_mode(
+                    drone_lat=drone_lat,
+                    drone_lon=drone_lon,
+                    bbox=detection.bbox,
+                    frame_shape=frame.shape,
+                    altitude_m=altitude_m,
+                    horizontal_fov_deg=float(camera_cfg["horizontal_fov_deg"]),
+                    vertical_fov_deg=float(camera_cfg["vertical_fov_deg"]),
+                    mode=effective_geotag_mode,
+                    yaw_deg=yaw_deg,
+                    pitch_deg=pitch_deg,
+                    roll_deg=roll_deg,
+                    target_point=geotag_target_point,
+                )
+            except ValueError:
+                if geotag_mode != "pose_aware_flat_ground" or pose_fallback_mode is None:
+                    raise
+                effective_geotag_mode = pose_fallback_mode
+                target_lat, target_lon = estimate_target_position_with_mode(
+                    drone_lat=drone_lat,
+                    drone_lon=drone_lon,
+                    bbox=detection.bbox,
+                    frame_shape=frame.shape,
+                    altitude_m=altitude_m,
+                    horizontal_fov_deg=float(camera_cfg["horizontal_fov_deg"]),
+                    vertical_fov_deg=float(camera_cfg["vertical_fov_deg"]),
+                    mode=effective_geotag_mode,
+                    yaw_deg=yaw_deg,
+                    pitch_deg=pitch_deg,
+                    roll_deg=roll_deg,
+                    target_point=geotag_target_point,
+                )
             enriched_detection = {
                 "confidence": detection.confidence,
                 "bbox": list(detection.bbox),
@@ -332,7 +364,7 @@ def run(config_path: str = "config.yaml") -> RunSummary:
                 "lon": target_lon,
             }
             if include_geotag_metadata:
-                enriched_detection["geotag_mode"] = geotag_mode
+                enriched_detection["geotag_mode"] = effective_geotag_mode
                 enriched_detection["geotag_yaw_deg"] = yaw_deg
                 enriched_detection["geotag_target_point"] = geotag_target_point
             detections.append(enriched_detection)

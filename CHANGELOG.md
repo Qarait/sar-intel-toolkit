@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.8.3 — Tracker validation and claims-matrix fix
+
+Added:
+- Dedicated Kalman missed-frame continuity test
+- Defensive tracker input validation tests
+
+Fixed:
+- Corrected claims matrix test references
+- Ignored malformed tracker detections with invalid bounding boxes or non-finite values
+- Clamped confidence values to [0, 1]
+- Guarded Kalman prediction against invalid dt values
+
+Unchanged:
+- Detector behavior
+- Telemetry replay behavior
+- Geotagging behavior
+- Output schemas
+
 ## v0.8.0 — Mission profile presets
 
 Added:

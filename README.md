@@ -158,7 +158,7 @@ One entry per detected person per frame. Below is a real run on daylight street 
 
 **Fields:**
 - `timestamp`: UTC time of the alert (from video start_time_utc + frame_idx / fps)
-- `lat`, `lon`: estimated person location (nadir-camera projection from bbox and camera FOV)
+- `lat`, `lon`: estimated target location from the configured geotagging mode, camera FOV, telemetry, and selected bounding-box point
 - `confidence`: YOLO detector confidence (0–1)
 - `type`: alert class (currently `possible_person`)
 
@@ -409,7 +409,7 @@ geojson:
 - Tracks are **confirmed detection sequences**, not guaranteed unique real-world people. Occlusion, out-of-frame motion, or detector instability can fragment one person into multiple tracks.
 - `track_class` is a confidence classification of the detection sequence — not a verified identity or guaranteed unique human.
 - Kalman/SORT-style prediction improves continuity across short missed detections, but it is not a full SORT implementation and does not use Hungarian assignment.
-- Heading-aware geotagging uses yaw only. It does not yet perform full pitch/roll/camera-pose photogrammetry.
+- `heading_aware_nadir` uses yaw only. `pose_aware_flat_ground` additionally uses yaw, pitch, and roll, but still assumes flat ground and is not terrain-aware calibrated photogrammetry.
 - GeoJSON geometry uses `[longitude, latitude]` order to match the GeoJSON specification.
 - GeoJSON export is driven from confirmed tracks only. Alerts are not exported as GeoJSON.
 - `config.yaml` uses a pretrained Ultralytics detector and may download weights on first online use. `config.offline.yaml` forces OpenCV HOG detection for offline operation and does not require model weights.

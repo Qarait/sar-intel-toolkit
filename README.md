@@ -16,6 +16,8 @@ Detailed system flow and module responsibilities are documented in docs/ARCHITEC
 
 Configuration options and section-by-section YAML reference are documented in docs/CONFIGURATION.md.
 
+Mission profile presets and their scope are documented in docs/MISSION_PROFILES.md.
+
 Near-term and longer-term project priorities are documented in docs/ROADMAP.md.
 
 ## Proof stack
@@ -36,8 +38,21 @@ Near-term and longer-term project priorities are documented in docs/ROADMAP.md.
 - Multi-frame tracking with optional Kalman prediction
 - Confidence-weighted track scoring
 - GeoJSON export
+- Mission profiles
 
 See CHANGELOG.md for release history.
+
+## Mission profiles
+
+The toolkit supports config-driven mission profiles.
+
+Built-in verified profiles:
+- sar_daylight
+- sar_low_visibility
+
+Future/custom profiles can tune detector thresholds, tracking parameters, and scoring weights, but profiles do not replace model validation or operational authorization.
+
+See docs/MISSION_PROFILES.md.
 
 ## Design decisions
 

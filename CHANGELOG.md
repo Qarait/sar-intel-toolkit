@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.8.0 — Mission profile presets
+
+Added:
+- `mission_profile` config support
+- Built-in `sar_daylight` profile
+- Built-in `sar_low_visibility` profile
+- Mission profile resolver with deep-merge config overrides
+- Mission profile documentation
+
+Unchanged:
+- Detector behavior
+- Telemetry replay behavior
+- Geotagging behavior
+- Tracker association behavior
+- Output schemas
+
+Notes:
+- Wildfire and thermal/night profiles are documented as future/custom profiles requiring validated models.
+- Mission profiles are tuning presets, not operational flight guidance.
+
 ## v0.7.2 — Release verification and claims matrix
 
 Added:

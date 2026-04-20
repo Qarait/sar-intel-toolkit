@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SAR Alerts",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": [
+      "timestamp",
+      "lat",
+      "lon",
+      "confidence",
+      "type"
+    ],
+    "properties": {
+      "timestamp": {
+        "type": "string"
+      },
+      "lat": {
+        "type": "number"
+      },
+      "lon": {
+        "type": "number"
+      },
+      "confidence": {
+        "type": "number",
+        "minimum": 0.0,
+        "maximum": 1.0
+      },
+      "type": {
+        "type": "string",
+        "const": "possible_person"
+      },
+      "track_id": {
+        "type": "integer",
+        "minimum": 1
+      }
+    },
+    "additionalProperties": false
+  }
+}

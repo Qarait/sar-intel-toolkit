@@ -62,6 +62,46 @@ def _xywh_to_bbox(cx: float, cy: float, w: float, h: float) -> List[float]:
     return [float(cx) - half_w, float(cy) - half_h, float(cx) + half_w, float(cy) + half_h]
 
 
+def _is_finite_number(value: object) -> bool:
+    try:
+        return math.isfinite(float(value))
+    except (TypeError, ValueError):
+        return False
+
+
+def _validate_bbox(bbox: object) -> List[float] | None:
+    if not isinstance(bbox, (list, tuple)) or len(bbox) != 4:
+        return None
+
+    if not all(_is_finite_number(v) for v in bbox):
+        return None
+
+    x1, y1, x2, y2 = [float(v) for v in bbox]
+
+    if x2 <= x1 or y2 <= y1:
+        return None
+
+    return [x1, y1, x2, y2]
+
+
+def _validate_detection(detection: Dict[str, Any]) -> Dict[str, Any] | None:
+    bbox = _validate_bbox(detection.get("bbox"))
+    if bbox is None:
+        return None
+
+    required_numeric = ["confidence", "lat", "lon"]
+    if not all(_is_finite_number(detection.get(key)) for key in required_numeric):
+        return None
+
+    clean = dict(detection)
+    clean["bbox"] = bbox
+    clean["confidence"] = max(0.0, min(1.0, float(detection["confidence"])))
+    clean["lat"] = float(detection["lat"])
+    clean["lon"] = float(detection["lon"])
+
+    return clean
+
+
 class KalmanBBoxFilter:
     def __init__(
         self,
@@ -82,11 +122,15 @@ class KalmanBBoxFilter:
         self.measurement_matrix[3, 3] = 1.0
 
     def predict(self, dt: float = 1.0) -> None:
+        dt_value = float(dt)
+        if not math.isfinite(dt_value) or dt_value <= 0.0:
+            dt_value = 1.0
+
         transition = np.eye(8, dtype=float)
-        transition[0, 4] = dt
-        transition[1, 5] = dt
-        transition[2, 6] = dt
-        transition[3, 7] = dt
+        transition[0, 4] = dt_value
+        transition[1, 5] = dt_value
+        transition[2, 6] = dt_value
+        transition[3, 7] = dt_value
 
         process_cov = np.eye(8, dtype=float) * self.process_noise
         self.state = transition @ self.state
@@ -335,6 +379,14 @@ class SimpleTracker:
         frame_idx: int,
         event_time: Optional[datetime] = None,
     ) -> List[Dict[str, Any]]:
+        clean_detections = []
+        for detection in detections:
+            clean = _validate_detection(detection)
+            if clean is not None:
+                clean_detections.append(clean)
+
+        detections = clean_detections
+
         if event_time is None:
             if detections:
                 ts_str = str(detections[0].get("timestamp", ""))

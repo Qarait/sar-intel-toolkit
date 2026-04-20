@@ -215,19 +215,35 @@ Fields:
 - `mode`: geotagging mode
 - `target_point`: image point selected from the bounding box
 - `include_geotag_metadata`: include extra geotag fields on enriched detections before tracking
+- `pose_fallback_mode`: optional fallback mode used only when `pose_aware_flat_ground` cannot intersect the flat ground plane
 
-Supported values:
-- `mode: nadir`
-- `mode: heading_aware_nadir`
-- `target_point: bbox_center`
-- `target_point: bbox_bottom_center`
+Supported `mode` values:
+- `nadir`
+- `heading_aware_nadir`
+- `pose_aware_flat_ground`
+
+Supported `target_point` values:
+- `bbox_center`
+- `bbox_bottom_center`
+
+Supported `pose_fallback_mode` values:
+- omitted / null
+- `nadir`
+- `heading_aware_nadir`
 
 Behavior:
 - `nadir` uses camera-relative offsets directly.
-- `heading_aware_nadir` rotates those offsets by telemetry `yaw_deg` before projecting to latitude/longitude.
+- `heading_aware_nadir` rotates camera/image offsets by telemetry `yaw_deg`.
+- `pose_aware_flat_ground` builds a camera ray from the selected image point, rotates it using telemetry `yaw_deg`, `pitch_deg`, and `roll_deg`, and intersects it with a flat ground plane.
+- If `pose_aware_flat_ground` cannot intersect the ground plane and `pose_fallback_mode` is set, the pipeline falls back to that configured mode.
+- If no fallback is configured, the run raises a clear error.
 
 Notes:
-- This is still approximate flat-ground geotagging, not full camera-pose projection.
+- `pose_aware_flat_ground` is still approximate.
+- It assumes flat ground.
+- It assumes the telemetry yaw/pitch/roll sign conventions match `docs/GEOTAGGING_MODEL.md`.
+- It does not use terrain data.
+- It does not perform full calibrated photogrammetry.
 - `include_geotag_metadata` defaults to `false`.
 
 ## geojson
@@ -291,8 +307,10 @@ track_scoring:
   enabled: true
 
 geotagging:
-  mode: heading_aware_nadir
-  target_point: bbox_center
+  mode: pose_aware_flat_ground
+  target_point: bbox_bottom_center
+  include_geotag_metadata: false
+  pose_fallback_mode: heading_aware_nadir
 
 geojson:
   enabled: true

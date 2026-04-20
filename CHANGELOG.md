@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.9.1 — Configuration documentation alignment
+
+Fixed:
+- Updated `docs/CONFIGURATION.md` to document `pose_aware_flat_ground`
+- Documented `pose_fallback_mode`
+- Updated README current-capability wording after v0.9.0
+- Removed stale wording that implied pose-aware geotagging was still only future work
+
+Unchanged:
+- Runtime behavior
+- Output schemas
+- Detector/tracker/telemetry behavior
+
 ## v0.9.0 — Pose-aware flat-ground geotagging
 
 Added:

@@ -41,6 +41,7 @@ It uses telemetry `yaw_deg`, `pitch_deg`, and `roll_deg` to rotate an image ray 
 - Simulated or replayed drone telemetry
 - Approximate geotag fusion
 - Heading-aware nadir projection
+- Pose-aware flat-ground geotagging using yaw/pitch/roll
 - Multi-frame tracking with optional Kalman prediction
 - Confidence-weighted track scoring
 - GeoJSON export
@@ -66,7 +67,13 @@ See docs/MISSION_PROFILES.md.
 - `tracks.json` is the deduplicated analytical output.
 - GeoJSON is generated from tracks, not raw alerts, to avoid map clutter.
 - Telemetry replay was added before live drone integration to keep testing reproducible.
-- Heading-aware geotagging was added before full pose-aware projection to improve realism without overclaiming accuracy.
+- Pose-aware flat-ground geotagging was added before terrain-aware photogrammetry to improve realism while keeping the math inspectable and bounded.
+
+### Pose-aware flat-ground geotagging
+
+`pose_aware_flat_ground` uses telemetry `yaw_deg`, `pitch_deg`, and `roll_deg` to rotate an image ray onto a flat ground plane.
+
+It is more realistic than heading-only projection when aircraft attitude is available, but it is still not terrain-aware photogrammetry and does not replace camera calibration or field validation.
 
 ## Suggested review path
 

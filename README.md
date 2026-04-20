@@ -1,5 +1,7 @@
 # SAR-INTEL TOOLKIT
 
+[![CI](https://github.com/Qarait/sar-intel-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/Qarait/sar-intel-toolkit/actions/workflows/ci.yml)
+
 Simulation-first mission intelligence toolkit for search-and-rescue drone workflows.
 
 It generates search grids, processes video detections, fuses detections with drone telemetry, tracks possible people across frames, and exports structured alerts, tracks, and map-ready GeoJSON.
@@ -8,7 +10,21 @@ See CHANGELOG.md for version history and capability progression.
 
 Project constraints and non-goals are documented in docs/LIMITATIONS.md.
 
+Safety and intended-use guidance are documented in docs/SAFETY.md.
+
 Detailed system flow and module responsibilities are documented in docs/ARCHITECTURE.md.
+
+Configuration options and section-by-section YAML reference are documented in docs/CONFIGURATION.md.
+
+Near-term and longer-term project priorities are documented in docs/ROADMAP.md.
+
+## Proof stack
+
+- Automated tests live in `tests/`.
+- Output contracts live in `schemas/` and are validated in test coverage.
+- Real validation notes live in `docs/VALIDATION.md`.
+- Each run writes `output/run_manifest.json` to record provenance.
+- CI runs compile checks, pytest, and offline/replay smoke tests.
 
 ## Current capabilities
 
@@ -25,11 +41,11 @@ See CHANGELOG.md for release history.
 
 ## Design decisions
 
-- The toolkit is simulation-first to keep early testing reproducible.
 - `alerts.json` remains frame-level for backward compatibility.
-- `tracks.json` is the higher-level deduplicated output.
-- GeoJSON is generated from tracks, not raw alerts, to reduce clutter.
-- Heading-aware geotagging is implemented before full pose-aware projection to improve realism without overclaiming accuracy.
+- `tracks.json` is the deduplicated analytical output.
+- GeoJSON is generated from tracks, not raw alerts, to avoid map clutter.
+- Telemetry replay was added before live drone integration to keep testing reproducible.
+- Heading-aware geotagging was added before full pose-aware projection to improve realism without overclaiming accuracy.
 
 ## Suggested review path
 
@@ -37,8 +53,9 @@ See CHANGELOG.md for release history.
 2. Run `python main.py --config config.replay.yaml`
 3. Inspect `output/alerts.json`
 4. Inspect `output/tracks.json`
-5. Load `output/tracks.geojson` into a map viewer
-6. Read `docs/LIMITATIONS.md`
+5. Inspect `output/run_manifest.json`
+6. Load `output/tracks.geojson` into a map viewer
+7. Read `docs/LIMITATIONS.md`
 
 ## Run
 
@@ -50,6 +67,8 @@ python main.py --config config.yaml
 ```
 
 Model weights are not required for offline mode. Online YOLO mode may download weights on first use.
+
+This repository does not commit model weight binaries. If you want to use a custom YOLO checkpoint, place it locally and point `detector.model` at that path; otherwise use the default online download behavior or the offline-safe HOG configuration.
 
 Offline-safe config:
 
@@ -68,6 +87,18 @@ python main.py --config config.replay.yaml
 
 Detailed validation notes and real-footage results are in docs/VALIDATION.md.
 
+## Release verification
+
+Run:
+
+```bash
+python scripts/verify_release.py
+```
+
+This verifies the core advertised pipeline without requiring online model downloads.
+
+See [docs/CLAIMS_MATRIX.md](docs/CLAIMS_MATRIX.md) for the public claim-to-test mapping.
+
 ## Inputs
 
 - `config.yaml` or `config.offline.yaml`
@@ -79,6 +110,7 @@ Detailed validation notes and real-footage results are in docs/VALIDATION.md.
 - `output/alerts.json` — frame-level detections (one per person per frame)
 - `output/tracks.json` — deduplicated confirmed person tracks
 - `output/tracks.geojson` — optional GeoJSON FeatureCollection of confirmed tracks for mapping tools
+- `output/run_manifest.json` — provenance summary describing what produced the run outputs
 
 ## Sample Output
 

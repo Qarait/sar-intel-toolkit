@@ -37,13 +37,15 @@ Exact full validation split command used for the public baseline result:
 
 ```bash
 python scripts/evaluate_visdrone_det.py \
-  --dataset-root C:\Users\Loritamus\Datasets\VisDrone\extracted\VisDrone2019-DET-val \
+  --dataset-root /path/to/VisDrone2019-DET-val \
   --split val \
   --model yolo26n.pt \
   --confidence-threshold 0.25 \
   --iou-threshold 0.5 \
   --output output/visdrone_det_validation_val.json
 ```
+
+Replace `/path/to/VisDrone2019-DET-val` with the local path to the downloaded VisDrone DET validation split.
 
 ## Output
 
@@ -101,6 +103,8 @@ This result is intended to be reproducible and comparable over time. It is a doc
 It is not a full SAR benchmark, not a tracking benchmark, and not operational field validation.
 
 ## How To Improve This Later
+
+No confidence-threshold sweep is reported in this document beyond the published 0.25 baseline run. Threshold sweep analysis remains future work.
 
 - Fine-tune the detector on aerial-person data, including VisDrone-like viewpoints and object scales.
 - Evaluate multiple confidence thresholds to understand baseline precision/recall tradeoffs.

@@ -10,6 +10,8 @@ This is not a full SAR operational validation. It is an aerial-person detection 
 
 Use the VisDrone DET validation split.
 
+The original run used a local downloaded copy of `VisDrone2019-DET-val`; the dataset itself is not committed to this repository.
+
 Expected layout:
 
 ```text
@@ -102,9 +104,16 @@ This result is intended to be reproducible and comparable over time. It is a doc
 
 It is not a full SAR benchmark, not a tracking benchmark, and not operational field validation.
 
-## How To Improve This Later
+## Threshold Sweep Status
 
-No confidence-threshold sweep is reported in this document beyond the published 0.25 baseline run. Threshold sweep analysis remains future work.
+The current published baseline uses:
+
+- Confidence threshold: 0.25
+- IoU threshold: 0.5
+
+A multi-threshold sweep has not yet been published. Future validation work should evaluate thresholds such as `0.10`, `0.25`, and `0.50` to show the precision/recall tradeoff more clearly.
+
+## How To Improve This Later
 
 - Fine-tune the detector on aerial-person data, including VisDrone-like viewpoints and object scales.
 - Evaluate multiple confidence thresholds to understand baseline precision/recall tradeoffs.

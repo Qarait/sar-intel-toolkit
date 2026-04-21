@@ -8,7 +8,7 @@ It generates search grids, processes video detections, fuses detections with dro
 
 See CHANGELOG.md for version history and capability progression.
 
-Project landing page: GitHub Pages site pending after deployment.
+Project landing page: https://qarait.github.io/sar-intel-toolkit/
 
 Project constraints and non-goals are documented in docs/LIMITATIONS.md.
 

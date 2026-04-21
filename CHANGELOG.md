@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.10.0 — VisDrone aerial validation harness
+
+Added:
+- VisDrone DET validation script
+- Person-category evaluation for `pedestrian` and `people`
+- Precision/recall/F1 summary output
+- Unit tests for annotation parsing, IoU, matching, and metrics
+- VisDrone validation documentation
+
+Unchanged:
+- Main pipeline behavior
+- Detector behavior
+- Tracker behavior
+- Geotagging behavior
+- Output schemas
+
 ## v0.9.1 — Configuration documentation alignment
 
 Fixed:

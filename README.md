@@ -31,6 +31,7 @@ It uses telemetry `yaw_deg`, `pitch_deg`, and `roll_deg` to rotate an image ray 
 - Automated tests live in `tests/`.
 - Output contracts live in `schemas/` and are validated in test coverage.
 - Real validation notes live in `docs/VALIDATION.md`.
+- VisDrone aerial validation harness: `docs/VISDRONE_VALIDATION.md`.
 - Each run writes `output/run_manifest.json` to record provenance.
 - CI runs compile checks, pytest, and offline/replay smoke tests.
 

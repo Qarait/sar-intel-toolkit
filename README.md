@@ -8,6 +8,8 @@ It generates search grids, processes video detections, fuses detections with dro
 
 See CHANGELOG.md for version history and capability progression.
 
+Project landing page: GitHub Pages site pending after deployment.
+
 Project constraints and non-goals are documented in docs/LIMITATIONS.md.
 
 Safety and intended-use guidance are documented in docs/SAFETY.md.

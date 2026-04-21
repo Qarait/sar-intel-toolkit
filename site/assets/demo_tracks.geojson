@@ -1,0 +1,511 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -122.401185,
+          37.792846
+        ]
+      },
+      "properties": {
+        "track_id": 1,
+        "type": "possible_person_track",
+        "track_class": "high_confidence_person",
+        "track_score": 0.8633,
+        "heatmap_weight": 0.8633,
+        "duration_seconds": 14.28,
+        "detection_density": 1.0,
+        "hits": 358,
+        "mean_confidence": 0.7679,
+        "max_confidence": 0.964
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -122.40175,
+          37.792765
+        ]
+      },
+      "properties": {
+        "track_id": 2,
+        "type": "possible_person_track",
+        "track_class": "possible_person",
+        "track_score": 0.703,
+        "heatmap_weight": 0.703,
+        "duration_seconds": 1.2,
+        "detection_density": 0.7742,
+        "hits": 24,
+        "mean_confidence": 0.6106,
+        "max_confidence": 0.8492
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -122.400999,
+          37.792889
+        ]
+      },
+      "properties": {
+        "track_id": 3,
+        "type": "possible_person_track",
+        "track_class": "possible_person",
+        "track_score": 0.6416,
+        "heatmap_weight": 0.6416,
+        "duration_seconds": 14.36,
+        "detection_density": 0.6917,
+        "hits": 249,
+        "mean_confidence": 0.5215,
+        "max_confidence": 0.866
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -122.40103,
+          37.792852
+        ]
+      },
+      "properties": {
+        "track_id": 4,
+        "type": "possible_person_track",
+        "track_class": "possible_person",
+        "track_score": 0.7292,
+        "heatmap_weight": 0.7292,
+        "duration_seconds": 13.4,
+        "detection_density": 0.756,
+        "hits": 254,
+        "mean_confidence": 0.6336,
+        "max_confidence": 0.9182
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -122.401462,
+          37.792943
+        ]
+      },
+      "properties": {
+        "track_id": 5,
+        "type": "possible_person_track",
+        "track_class": "marginal_person",
+        "track_score": 0.3908,
+        "heatmap_weight": 0.3908,
+        "duration_seconds": 1.24,
+        "detection_density": 0.3125,
+        "hits": 10,
+        "mean_confidence": 0.342,
+        "max_confidence": 0.5609
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -122.401593,
+          37.792872
+        ]
+      },
+      "properties": {
+        "track_id": 6,
+        "type": "possible_person_track",
+        "track_class": "marginal_person",
+        "track_score": 0.5199,
+        "heatmap_weight": 0.5199,
+        "duration_seconds": 4.72,
+        "detection_density": 0.5462,
+        "hits": 65,
+        "mean_confidence": 0.4198,
+        "max_confidence": 0.7192
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -122.401167,
+          37.792816
+        ]
+      },
+      "properties": {
+        "track_id": 7,
+        "type": "possible_person_track",
+        "track_class": "high_confidence_person",
+        "track_score": 0.8142,
+        "heatmap_weight": 0.8142,
+        "duration_seconds": 9.36,
+        "detection_density": 0.9489,
+        "hits": 223,
+        "mean_confidence": 0.7102,
+        "max_confidence": 0.9352
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -122.401338,
+          37.792957
+        ]
+      },
+      "properties": {
+        "track_id": 8,
+        "type": "possible_person_track",
+        "track_class": "marginal_person",
+        "track_score": 0.2963,
+        "heatmap_weight": 0.2963,
+        "duration_seconds": 0.4,
+        "detection_density": 0.3636,
+        "hits": 4,
+        "mean_confidence": 0.2723,
+        "max_confidence": 0.2953
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -122.401137,
+          37.792964
+        ]
+      },
+      "properties": {
+        "track_id": 9,
+        "type": "possible_person_track",
+        "track_class": "possible_person",
+        "track_score": 0.5843,
+        "heatmap_weight": 0.5843,
+        "duration_seconds": 3.48,
+        "detection_density": 0.7273,
+        "hits": 64,
+        "mean_confidence": 0.4931,
+        "max_confidence": 0.6704
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -122.401142,
+          37.792908
+        ]
+      },
+      "properties": {
+        "track_id": 10,
+        "type": "possible_person_track",
+        "track_class": "possible_person",
+        "track_score": 0.6239,
+        "heatmap_weight": 0.6239,
+        "duration_seconds": 6.32,
+        "detection_density": 0.8239,
+        "hits": 131,
+        "mean_confidence": 0.492,
+        "max_confidence": 0.7539
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -122.400784,
+          37.792829
+        ]
+      },
+      "properties": {
+        "track_id": 11,
+        "type": "possible_person_track",
+        "track_class": "high_confidence_person",
+        "track_score": 0.8705,
+        "heatmap_weight": 0.8705,
+        "duration_seconds": 11.0,
+        "detection_density": 0.9493,
+        "hits": 262,
+        "mean_confidence": 0.8067,
+        "max_confidence": 0.9478
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -122.400905,
+          37.79285
+        ]
+      },
+      "properties": {
+        "track_id": 12,
+        "type": "possible_person_track",
+        "track_class": "possible_person",
+        "track_score": 0.7278,
+        "heatmap_weight": 0.7278,
+        "duration_seconds": 10.88,
+        "detection_density": 0.8828,
+        "hits": 241,
+        "mean_confidence": 0.5745,
+        "max_confidence": 0.9411
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -122.401372,
+          37.792913
+        ]
+      },
+      "properties": {
+        "track_id": 13,
+        "type": "possible_person_track",
+        "track_class": "marginal_person",
+        "track_score": 0.3585,
+        "heatmap_weight": 0.3585,
+        "duration_seconds": 1.76,
+        "detection_density": 0.3111,
+        "hits": 14,
+        "mean_confidence": 0.3199,
+        "max_confidence": 0.4812
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -122.401126,
+          37.792887
+        ]
+      },
+      "properties": {
+        "track_id": 14,
+        "type": "possible_person_track",
+        "track_class": "possible_person",
+        "track_score": 0.714,
+        "heatmap_weight": 0.714,
+        "duration_seconds": 4.48,
+        "detection_density": 0.9469,
+        "hits": 107,
+        "mean_confidence": 0.5644,
+        "max_confidence": 0.8569
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -122.400481,
+          37.792801
+        ]
+      },
+      "properties": {
+        "track_id": 15,
+        "type": "possible_person_track",
+        "track_class": "high_confidence_person",
+        "track_score": 0.9114,
+        "heatmap_weight": 0.9114,
+        "duration_seconds": 7.0,
+        "detection_density": 1.0,
+        "hits": 176,
+        "mean_confidence": 0.8688,
+        "max_confidence": 0.9342
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -122.401027,
+          37.792929
+        ]
+      },
+      "properties": {
+        "track_id": 16,
+        "type": "possible_person_track",
+        "track_class": "possible_person",
+        "track_score": 0.5533,
+        "heatmap_weight": 0.5533,
+        "duration_seconds": 1.96,
+        "detection_density": 0.88,
+        "hits": 44,
+        "mean_confidence": 0.4131,
+        "max_confidence": 0.6004
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -122.400669,
+          37.7929
+        ]
+      },
+      "properties": {
+        "track_id": 17,
+        "type": "possible_person_track",
+        "track_class": "marginal_person",
+        "track_score": 0.4059,
+        "heatmap_weight": 0.4059,
+        "duration_seconds": 1.08,
+        "detection_density": 0.5,
+        "hits": 14,
+        "mean_confidence": 0.3229,
+        "max_confidence": 0.5132
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -122.40052,
+          37.792947
+        ]
+      },
+      "properties": {
+        "track_id": 18,
+        "type": "possible_person_track",
+        "track_class": "possible_person",
+        "track_score": 0.5584,
+        "heatmap_weight": 0.5584,
+        "duration_seconds": 4.76,
+        "detection_density": 0.7,
+        "hits": 84,
+        "mean_confidence": 0.4556,
+        "max_confidence": 0.6714
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -122.400868,
+          37.792949
+        ]
+      },
+      "properties": {
+        "track_id": 19,
+        "type": "possible_person_track",
+        "track_class": "marginal_person",
+        "track_score": 0.3877,
+        "heatmap_weight": 0.3877,
+        "duration_seconds": 0.48,
+        "detection_density": 0.6923,
+        "hits": 9,
+        "mean_confidence": 0.2945,
+        "max_confidence": 0.349
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -122.400227,
+          37.79282
+        ]
+      },
+      "properties": {
+        "track_id": 20,
+        "type": "possible_person_track",
+        "track_class": "possible_person",
+        "track_score": 0.7903,
+        "heatmap_weight": 0.7903,
+        "duration_seconds": 3.12,
+        "detection_density": 0.9747,
+        "hits": 77,
+        "mean_confidence": 0.6625,
+        "max_confidence": 0.924
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -122.400565,
+          37.79293
+        ]
+      },
+      "properties": {
+        "track_id": 21,
+        "type": "possible_person_track",
+        "track_class": "possible_person",
+        "track_score": 0.6468,
+        "heatmap_weight": 0.6468,
+        "duration_seconds": 3.04,
+        "detection_density": 0.9221,
+        "hits": 71,
+        "mean_confidence": 0.5202,
+        "max_confidence": 0.705
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -122.400487,
+          37.792924
+        ]
+      },
+      "properties": {
+        "track_id": 22,
+        "type": "possible_person_track",
+        "track_class": "marginal_person",
+        "track_score": 0.4743,
+        "heatmap_weight": 0.4743,
+        "duration_seconds": 1.2,
+        "detection_density": 0.4839,
+        "hits": 15,
+        "mean_confidence": 0.3982,
+        "max_confidence": 0.6338
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -122.40033,
+          37.79294
+        ]
+      },
+      "properties": {
+        "track_id": 23,
+        "type": "possible_person_track",
+        "track_class": "marginal_person",
+        "track_score": 0.3084,
+        "heatmap_weight": 0.3084,
+        "duration_seconds": 0.72,
+        "detection_density": 0.3158,
+        "hits": 6,
+        "mean_confidence": 0.2832,
+        "max_confidence": 0.358
+      }
+    }
+  ]
+}

@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAR-INTEL TOOLKIT</title>
+  <meta
+    name="description"
+    content="Public static landing page for SAR-INTEL TOOLKIT, including pipeline overview, validation summary, safety notes, and a GeoJSON map demo."
+  >
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="hero" id="top">
+    <div class="hero-inner">
+      <p class="eyebrow">Simulation-first search-and-rescue drone intelligence pipeline.</p>
+      <h1>SAR-INTEL TOOLKIT</h1>
+      <p class="subtitle">Simulation-first search-and-rescue drone intelligence pipeline.</p>
+      <p class="hero-copy">
+        Turns drone-style video and telemetry into geotagged alerts, confirmed tracks, confidence scores, and map-ready GeoJSON.
+      </p>
+      <div class="hero-actions">
+        <a class="button button-primary" href="https://github.com/Qarait/sar-intel-toolkit" target="_blank" rel="noreferrer">View GitHub</a>
+        <a class="button button-secondary" href="https://github.com/Qarait/sar-intel-toolkit/blob/main/docs/VISDRONE_VALIDATION.md" target="_blank" rel="noreferrer">Read Validation</a>
+        <a class="button button-tertiary" href="https://github.com/Qarait/sar-intel-toolkit/blob/main/docs/SAFETY.md" target="_blank" rel="noreferrer">View Safety Notes</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="panel intro-panel">
+      <div>
+        <p class="section-tag">Problem</p>
+        <h2>Search-and-rescue review quickly becomes noisy.</h2>
+      </div>
+      <div class="intro-copy">
+        <p>
+          Search-and-rescue drone footage can produce repeated detections, uncertain location estimates, and large volumes of video to review.
+        </p>
+        <p>
+          SAR-INTEL TOOLKIT reduces that into structured, reviewable outputs.
+        </p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <p class="section-tag">Pipeline</p>
+      <h2>From mission plan to map-ready output.</h2>
+      <div class="pipeline" aria-label="Pipeline steps">
+        <div class="step"><span>Search Grid</span></div>
+        <div class="arrow" aria-hidden="true">&rarr;</div>
+        <div class="step"><span>Video Detection</span></div>
+        <div class="arrow" aria-hidden="true">&rarr;</div>
+        <div class="step"><span>Telemetry Replay</span></div>
+        <div class="arrow" aria-hidden="true">&rarr;</div>
+        <div class="step"><span>Pose-aware Geotagging</span></div>
+        <div class="arrow" aria-hidden="true">&rarr;</div>
+        <div class="step"><span>Kalman Tracking</span></div>
+        <div class="arrow" aria-hidden="true">&rarr;</div>
+        <div class="step"><span>Confidence Scoring</span></div>
+        <div class="arrow" aria-hidden="true">&rarr;</div>
+        <div class="step"><span>GeoJSON Export</span></div>
+      </div>
+    </section>
+
+    <section class="panel metrics-panel">
+      <div class="metrics-heading">
+        <div>
+          <p class="section-tag">Demo metrics</p>
+          <h2>Metrics derived from the sanitized demo GeoJSON.</h2>
+        </div>
+        <p id="metrics-summary">Counting features from <code>assets/demo_tracks.geojson</code> and combining them with the representative demo run summary.</p>
+      </div>
+      <div class="metrics-grid" id="metrics-grid"></div>
+    </section>
+
+    <section class="panel validation-panel">
+      <div>
+        <p class="section-tag">Public validation</p>
+        <h2>One documented aerial-person baseline.</h2>
+        <p>
+          The public validation harness evaluates the current detector against VisDrone DET validation imagery using the <code>pedestrian</code> and <code>people</code> categories.
+        </p>
+      </div>
+      <div class="validation-stats">
+        <article>
+          <span>Images</span>
+          <strong>548</strong>
+        </article>
+        <article>
+          <span>GT Person Boxes</span>
+          <strong>13,969</strong>
+        </article>
+        <article>
+          <span>Detections</span>
+          <strong>975</strong>
+        </article>
+        <article>
+          <span>TP</span>
+          <strong>802</strong>
+        </article>
+        <article>
+          <span>FP</span>
+          <strong>173</strong>
+        </article>
+        <article>
+          <span>FN</span>
+          <strong>13,167</strong>
+        </article>
+        <article>
+          <span>Precision</span>
+          <strong>0.8226</strong>
+        </article>
+        <article>
+          <span>Recall</span>
+          <strong>0.0574</strong>
+        </article>
+        <article>
+          <span>F1</span>
+          <strong>0.1073</strong>
+        </article>
+      </div>
+      <p class="note">
+        The baseline model was not trained specifically on VisDrone aerial-person imagery, so low recall is expected. This is a public aerial-drone detection sanity check, not an operational SAR benchmark.
+      </p>
+    </section>
+
+    <section class="panel map-panel">
+      <div class="map-copy">
+        <p class="section-tag">Map-ready GeoJSON</p>
+        <h2>Confirmed tracks can be visualized in standard web maps and GIS tools.</h2>
+        <p>
+          The demo map loads a sanitized, public-safe GeoJSON asset derived from a non-empty local run. It preserves representative scoring and track properties while removing runtime-only fields and original location context.
+        </p>
+      </div>
+      <div class="map-layout">
+        <div class="map-stack">
+          <div id="map" aria-label="Demo GeoJSON map"></div>
+          <p id="map-fallback" class="map-fallback" hidden>
+            Map preview unavailable. The page could not load the Leaflet map library or the demo GeoJSON asset. The sanitized dataset still lives at <code>assets/demo_tracks.geojson</code> and uses GeoJSON coordinates in <code>[longitude, latitude]</code> order.
+          </p>
+          <noscript>
+            <p class="map-fallback map-fallback-visible">
+              Map preview unavailable because JavaScript is disabled. The demo asset is available at <code>assets/demo_tracks.geojson</code> and uses GeoJSON coordinates in <code>[longitude, latitude]</code> order.
+            </p>
+          </noscript>
+        </div>
+        <div class="snippet-card">
+          <h3>Demo feature snippet</h3>
+          <pre><code id="snippet"></code></pre>
+        </div>
+      </div>
+      <div class="track-card-grid" id="track-card-grid" aria-label="Representative track cards"></div>
+    </section>
+
+    <section class="panel outputs-panel">
+      <div>
+        <p class="section-tag">Outputs</p>
+        <h2>Readable artifacts for review and downstream tools.</h2>
+      </div>
+      <div class="outputs-grid">
+        <article>
+          <h3>alerts.json</h3>
+          <p>frame-level possible-person alerts</p>
+        </article>
+        <article>
+          <h3>tracks.json</h3>
+          <p>deduplicated, scored detection tracks</p>
+        </article>
+        <article>
+          <h3>tracks.geojson</h3>
+          <p>map-ready confirmed track features</p>
+        </article>
+        <article>
+          <h3>run_manifest.json</h3>
+          <p>run provenance and configuration summary</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="panel safety-panel">
+      <div>
+        <p class="section-tag">Safety limitations</p>
+        <h2>Public claims stay bounded by actual evidence.</h2>
+      </div>
+      <ul class="safety-list">
+        <li>Prototype only.</li>
+        <li>Human review required.</li>
+        <li>Not operational SAR software.</li>
+        <li>Geotagging is approximate and configuration-dependent.</li>
+        <li>Pose-aware flat-ground mode is not terrain-aware calibrated photogrammetry.</li>
+      </ul>
+    </section>
+
+    <section class="panel links-panel">
+      <div>
+        <p class="section-tag">Links</p>
+        <h2>Primary public references.</h2>
+      </div>
+      <div class="links-grid">
+        <a href="https://github.com/Qarait/sar-intel-toolkit" target="_blank" rel="noreferrer">GitHub repository</a>
+        <a href="https://github.com/Qarait/sar-intel-toolkit/releases/latest" target="_blank" rel="noreferrer">Latest release</a>
+        <a href="https://github.com/Qarait/sar-intel-toolkit/blob/main/docs/VISDRONE_VALIDATION.md" target="_blank" rel="noreferrer">docs/VISDRONE_VALIDATION.md</a>
+        <a href="https://github.com/Qarait/sar-intel-toolkit/blob/main/docs/SAFETY.md" target="_blank" rel="noreferrer">docs/SAFETY.md</a>
+        <a href="https://github.com/Qarait/sar-intel-toolkit/blob/main/docs/LIMITATIONS.md" target="_blank" rel="noreferrer">docs/LIMITATIONS.md</a>
+        <a href="https://github.com/Qarait/sar-intel-toolkit/blob/main/docs/CONFIGURATION.md" target="_blank" rel="noreferrer">docs/CONFIGURATION.md</a>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="app.js"></script>
+</body>
+</html>

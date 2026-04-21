@@ -20,18 +20,32 @@ Mission profile presets and their scope are documented in docs/MISSION_PROFILES.
 
 Near-term and longer-term project priorities are documented in docs/ROADMAP.md.
 
-## New in v0.9.0
+## New in v0.10.1
 
-An optional `pose_aware_flat_ground` geotagging mode is available.
+The toolkit now includes a documented VisDrone DET validation run for public aerial-drone imagery.
 
-It uses telemetry `yaw_deg`, `pitch_deg`, and `roll_deg` to rotate an image ray onto a flat ground plane. This improves realism when aircraft attitude is available, but it still assumes flat ground and camera-model simplifications rather than terrain-aware photogrammetry.
+The validation harness evaluates the existing person detector against VisDrone `pedestrian` and `people` annotations and reports precision, recall, F1, TP, FP, FN, and per-image summaries.
+
+Initial full validation split result:
+
+- Images evaluated: 548
+- GT person boxes: 13,969
+- Detections: 975
+- TP: 802
+- FP: 173
+- FN: 13,167
+- Precision: 0.8226
+- Recall: 0.0574
+- F1: 0.1073
+
+This is an aerial-person detection sanity check, not an operational SAR benchmark. The baseline model was not trained specifically on VisDrone aerial-person imagery, so low recall is expected.
 
 ## Proof stack
 
 - Automated tests live in `tests/`.
 - Output contracts live in `schemas/` and are validated in test coverage.
 - Real validation notes live in `docs/VALIDATION.md`.
-- VisDrone aerial validation harness: `docs/VISDRONE_VALIDATION.md`.
+- Public aerial-drone validation results: `docs/VISDRONE_VALIDATION.md`.
 - Each run writes `output/run_manifest.json` to record provenance.
 - CI runs compile checks, pytest, and offline/replay smoke tests.
 
@@ -268,7 +282,7 @@ The geotagging step is intentionally approximate and suitable for simulation-fir
 - Assumes a nadir-looking (downward-facing) camera
 - Assumes flat ground with no terrain model
 - No lens distortion correction
-- Suitable for SAR planning and area deconfliction, not for precise strike coordinates
+- Suitable for SAR planning and area deconfliction, not for ground-truth localization or operational decision-making without human review
 
 For operational systems, geotagging should be replaced with proper camera calibration, ground-truth terrain data, and multi-sensor fusion.
 

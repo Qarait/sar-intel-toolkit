@@ -20,6 +20,8 @@ VisDrone2019-DET-val/
 
 ## Run
 
+Example subset run:
+
 ```bash
 python scripts/evaluate_visdrone_det.py \
   --dataset-root /path/to/VisDrone2019-DET-val \
@@ -29,6 +31,18 @@ python scripts/evaluate_visdrone_det.py \
   --confidence-threshold 0.25 \
   --iou-threshold 0.5 \
   --output output/visdrone_det_validation.json
+```
+
+Exact full validation split command used for the public baseline result:
+
+```bash
+python scripts/evaluate_visdrone_det.py \
+  --dataset-root C:\Users\Loritamus\Datasets\VisDrone\extracted\VisDrone2019-DET-val \
+  --split val \
+  --model yolo26n.pt \
+  --confidence-threshold 0.25 \
+  --iou-threshold 0.5 \
+  --output output/visdrone_det_validation_val.json
 ```
 
 ## Output
@@ -48,7 +62,7 @@ This validation checks aerial-person detection behavior. It does not validate op
 Dataset: VisDrone2019-DET-val  
 Task: Person-category detection sanity check  
 Categories evaluated: `pedestrian`, `people`  
-Model: `yolo26n.pt`  
+Detector/model: `yolo26n.pt`  
 Confidence threshold: 0.25  
 IoU threshold: 0.5  
 
@@ -80,6 +94,15 @@ F1: 0.1073
 
 This is a public aerial-drone detection sanity check. It evaluates the existing person detector against VisDrone `pedestrian` and `people` annotations.
 
-The baseline model was not trained specifically on VisDrone aerial-person imagery, so low recall or precision is expected. This result establishes a reproducible baseline for future detector improvement.
+The low recall should be interpreted as a baseline limitation, not as a benchmark-leading claim. The baseline model was not trained specifically on VisDrone aerial-person imagery, so many small or difficult aerial-person instances are missed.
+
+This result is intended to be reproducible and comparable over time. It is a documented baseline for future detector improvement rather than a claim that the current detector is state of the art on VisDrone.
 
 It is not a full SAR benchmark, not a tracking benchmark, and not operational field validation.
+
+## How To Improve This Later
+
+- Fine-tune the detector on aerial-person data, including VisDrone-like viewpoints and object scales.
+- Evaluate multiple confidence thresholds to understand baseline precision/recall tradeoffs.
+- Test larger detector models to see whether recall improves on small aerial targets.
+- Add separate tracking or video-level validation later instead of treating this image-level DET check as an end-to-end benchmark.

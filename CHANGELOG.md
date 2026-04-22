@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.12.0 — VisDrone person fine-tuning workflow
+
+Added:
+- `scripts/prepare_visdrone_person_yolo.py` for generating a person-only YOLO dataset from VisDrone DET
+- `scripts/train_visdrone_person.py` for local fine-tuning runs against the prepared dataset
+- `tests/test_visdrone_person_conversion.py` synthetic coverage for category mapping, invalid-box filtering, YOLO normalization, dataset YAML generation, and train/val layout output
+- `docs/TRAINING_VISDRONE.md` documenting the local preparation and fine-tuning workflow
+
+Unchanged:
+- Core runtime SAR pipeline behavior
+- Detector runtime behavior
+- Configs
+- Schemas
+- Site assets
+
 ## v0.11.7 — Landing page attribution and demo-map clarity
 
 Fixed:

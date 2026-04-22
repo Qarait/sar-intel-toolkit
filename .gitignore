@@ -40,6 +40,14 @@ output/alerts.json
 output/
 *.pt
 
+# Local datasets and training outputs
+datasets/
+runs/
+
+# Local media/demo artifacts
+*.mp4
+*.webp
+
 # Development artifacts
 *.zip
 *.patch

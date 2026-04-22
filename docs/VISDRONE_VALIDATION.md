@@ -142,6 +142,8 @@ Lower confidence thresholds increase the chance of detecting small or difficult 
 
 This sweep is a baseline detector sensitivity check. It is not a claim of benchmark-leading performance or operational SAR readiness. The baseline model was not trained specifically on VisDrone aerial-person imagery, so low recall is expected.
 
+The repository also includes a local-only VisDrone person fine-tuning workflow in `docs/TRAINING_VISDRONE.md`. No fine-tuned public result is published in this validation document yet.
+
 ## How To Improve This Later
 
 - Fine-tune the detector on aerial-person data, including VisDrone-like viewpoints and object scales.

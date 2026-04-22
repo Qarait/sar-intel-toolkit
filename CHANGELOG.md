@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.11.6 — VisDrone confidence threshold sweep
+
+Added:
+- `--sweep` mode for `scripts/evaluate_visdrone_det.py`
+- `--sweep-thresholds` CLI option
+- Single-pass detection at the lowest threshold with in-memory filtering for sweep thresholds
+- Precision/recall/F1 sweep table in `docs/VISDRONE_VALIDATION.md`
+- Unit tests for threshold parsing, filtering, and cached sweep evaluation
+
+Unchanged:
+- Main SAR pipeline behavior
+- Detector behavior
+- Output schemas
+- Landing page behavior
+
 ## v0.11.5 — Documentation consistency cleanup
 
 Fixed:

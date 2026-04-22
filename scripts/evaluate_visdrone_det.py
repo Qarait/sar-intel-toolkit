@@ -51,6 +51,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help="Minimum detector confidence to keep a detection.",
     )
     parser.add_argument(
+        "--sweep",
+        action="store_true",
+        help="Evaluate multiple confidence thresholds using one detector pass at the lowest threshold.",
+    )
+    parser.add_argument(
+        "--sweep-thresholds",
+        default="0.10,0.25,0.50",
+        help="Comma-separated confidence thresholds to evaluate when --sweep is enabled.",
+    )
+    parser.add_argument(
         "--iou-threshold",
         type=float,
         default=0.5,
@@ -151,6 +161,39 @@ def safe_ratio(numerator: int | float, denominator: int | float) -> float:
     if denominator == 0:
         return 0.0
     return float(numerator) / float(denominator)
+
+
+def parse_sweep_thresholds(value: str) -> list[float]:
+    thresholds: list[float] = []
+
+    for raw_part in value.split(","):
+        part = raw_part.strip()
+        if not part:
+            continue
+
+        try:
+            threshold = float(part)
+        except ValueError as exc:
+            raise ValueError(f"Invalid sweep threshold {part!r}") from exc
+
+        if threshold < 0.0 or threshold > 1.0:
+            raise ValueError(
+                f"Invalid sweep threshold {threshold!r}; expected value in [0.0, 1.0]."
+            )
+
+        thresholds.append(threshold)
+
+    if not thresholds:
+        raise ValueError("At least one sweep threshold is required.")
+
+    return sorted(set(thresholds))
+
+
+def filter_detections_by_threshold(
+    detections: Iterable[dict[str, Any]],
+    confidence_threshold: float,
+) -> list[dict[str, Any]]:
+    return [detection for detection in detections if float(detection["confidence"]) >= confidence_threshold]
 
 
 def match_detections_to_ground_truth(
@@ -322,6 +365,165 @@ def evaluate_dataset(
     }
 
 
+def summarize_cached_evaluation(
+    image_records: Sequence[dict[str, Any]],
+    confidence_threshold: float,
+    iou_threshold: float,
+    *,
+    dataset_root: str | Path,
+    split: str,
+    max_images: int | None,
+    model: str,
+) -> dict[str, Any]:
+    per_image: list[dict[str, Any]] = []
+    gt_person_count = 0
+    detection_count = 0
+    true_positives = 0
+    false_positives = 0
+    false_negatives = 0
+    confidence_total = 0.0
+
+    for record in image_records:
+        image_name = record["image"]
+        gt_boxes = record["gt_boxes"]
+        all_detections = record["detections"]
+        detections = filter_detections_by_threshold(
+            all_detections,
+            confidence_threshold,
+        )
+
+        tp, fp, fn = match_detections_to_ground_truth(
+            detections,
+            gt_boxes,
+            iou_threshold,
+        )
+        metrics = compute_metrics(tp, fp, fn)
+
+        per_image.append(
+            {
+                "image": image_name,
+                "gt_count": len(gt_boxes),
+                "detections": len(detections),
+                "tp": tp,
+                "fp": fp,
+                "fn": fn,
+                "precision": metrics["precision"],
+                "recall": metrics["recall"],
+            }
+        )
+
+        gt_person_count += len(gt_boxes)
+        detection_count += len(detections)
+        true_positives += tp
+        false_positives += fp
+        false_negatives += fn
+        confidence_total += sum(float(detection["confidence"]) for detection in detections)
+
+    metrics = compute_metrics(true_positives, false_positives, false_negatives)
+    mean_confidence = safe_ratio(confidence_total, detection_count)
+
+    return {
+        "images_evaluated": len(image_records),
+        "gt_person_count": gt_person_count,
+        "detection_count": detection_count,
+        "true_positives": true_positives,
+        "false_positives": false_positives,
+        "false_negatives": false_negatives,
+        "precision": metrics["precision"],
+        "recall": metrics["recall"],
+        "f1": metrics["f1"],
+        "mean_confidence": mean_confidence,
+        "confidence_threshold": confidence_threshold,
+        "iou_threshold": iou_threshold,
+        "model": model,
+        "dataset_root": str(Path(dataset_root).resolve()),
+        "split": split,
+        "max_images": max_images,
+        "timestamp_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "per_image": per_image,
+    }
+
+
+def evaluate_dataset_sweep(
+    dataset_root: str | Path,
+    split: str,
+    max_images: int | None,
+    model: str,
+    sweep_thresholds: Sequence[float],
+    iou_threshold: float,
+) -> dict[str, Any]:
+    thresholds = sorted(set(float(value) for value in sweep_thresholds))
+    if not thresholds:
+        raise ValueError("At least one sweep threshold is required.")
+
+    base_threshold = min(thresholds)
+
+    split_root = resolve_split_root(dataset_root, split)
+    images_dir = split_root / "images"
+    annotations_dir = split_root / "annotations"
+
+    image_paths = sorted(images_dir.glob("*.jpg"))
+    if max_images is not None:
+        image_paths = image_paths[:max_images]
+
+    detector = PersonDetector(model_path=model, confidence_threshold=base_threshold)
+
+    image_records: list[dict[str, Any]] = []
+
+    for image_path in image_paths:
+        annotation_path = annotations_dir / f"{image_path.stem}.txt"
+        if not annotation_path.exists():
+            raise FileNotFoundError(
+                f"Missing annotation file for {image_path.name}: {annotation_path}"
+            )
+
+        gt_boxes = load_ground_truth(annotation_path)
+        frame = load_image(image_path)
+        raw_detections = detector.detect(frame)
+
+        detections = [
+            {
+                "confidence": float(detection.confidence),
+                "bbox": [float(value) for value in detection.bbox],
+            }
+            for detection in raw_detections
+        ]
+
+        image_records.append(
+            {
+                "image": image_path.name,
+                "gt_boxes": gt_boxes,
+                "detections": detections,
+            }
+        )
+
+    results = [
+        summarize_cached_evaluation(
+            image_records,
+            confidence_threshold=threshold,
+            iou_threshold=iou_threshold,
+            dataset_root=dataset_root,
+            split=split,
+            max_images=max_images,
+            model=model,
+        )
+        for threshold in thresholds
+    ]
+
+    return {
+        "mode": "sweep",
+        "dataset_root": str(Path(dataset_root).resolve()),
+        "split": split,
+        "model": model,
+        "iou_threshold": iou_threshold,
+        "sweep_thresholds": thresholds,
+        "base_detector_threshold": base_threshold,
+        "max_images": max_images,
+        "timestamp_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "results": results,
+    }
+
+
 def write_output(result: dict[str, Any], output_path: str | Path) -> Path:
     output = Path(output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -331,16 +533,42 @@ def write_output(result: dict[str, Any], output_path: str | Path) -> Path:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
-    result = evaluate_dataset(
-        dataset_root=args.dataset_root,
-        split=args.split,
-        max_images=args.max_images,
-        model=args.model,
-        confidence_threshold=args.confidence_threshold,
-        iou_threshold=args.iou_threshold,
-    )
+    if args.sweep:
+        thresholds = parse_sweep_thresholds(args.sweep_thresholds)
+        result = evaluate_dataset_sweep(
+            dataset_root=args.dataset_root,
+            split=args.split,
+            max_images=args.max_images,
+            model=args.model,
+            sweep_thresholds=thresholds,
+            iou_threshold=args.iou_threshold,
+        )
+    else:
+        result = evaluate_dataset(
+            dataset_root=args.dataset_root,
+            split=args.split,
+            max_images=args.max_images,
+            model=args.model,
+            confidence_threshold=args.confidence_threshold,
+            iou_threshold=args.iou_threshold,
+        )
     output_path = write_output(result, args.output)
     print(f"Saved VisDrone DET validation summary to {output_path}")
+
+    if args.sweep:
+        print("\nConfidence threshold sweep:")
+        print("threshold,detections,tp,fp,fn,precision,recall,f1")
+        for row in result["results"]:
+            print(
+                f'{row["confidence_threshold"]:.2f},'
+                f'{row["detection_count"]},'
+                f'{row["true_positives"]},'
+                f'{row["false_positives"]},'
+                f'{row["false_negatives"]},'
+                f'{row["precision"]:.4f},'
+                f'{row["recall"]:.4f},'
+                f'{row["f1"]:.4f}'
+            )
     return 0
 
 

@@ -504,6 +504,7 @@ h2 {
   justify-content: space-between;
   gap: 10px;
   align-items: flex-start;
+  flex-wrap: wrap;
   margin-bottom: 16px;
 }
 
@@ -517,7 +518,7 @@ h2 {
   border-radius: 999px;
   background: rgba(33, 76, 119, 0.1);
   color: var(--accent-deep);
-  font-size: 0.77rem;
+  font-size: 0.72rem;
   font-weight: 700;
 }
 

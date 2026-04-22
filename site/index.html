@@ -134,11 +134,21 @@
       <div class="map-copy">
         <p class="section-tag">Map-ready GeoJSON</p>
         <h2>Confirmed tracks can be visualized in standard web maps and GIS tools.</h2>
+        <div class="map-disclaimer">
+          <p><strong>Demo Disclaimer:</strong></p>
+          <ul>
+            <li>The demo GeoJSON is a <strong>sanitized demo output</strong>.</li>
+            <li>Map coordinates are for <strong>visualization only</strong>.</li>
+            <li>This map is <strong>not an operational SAR incident location</strong>.</li>
+            <li>The project is <strong>simulation-first / prototype-only</strong>.</li>
+          </ul>
+        </div>
         <p>
           The demo map loads a sanitized, public-safe GeoJSON asset derived from a non-empty local run. It preserves representative scoring and track properties while removing runtime-only fields and original location context.
         </p>
       </div>
       <div class="demo-toolbar">
+
         <div class="toolbar-group">
           <span class="toolbar-label">Filter tracks</span>
           <div class="filter-controls" id="filter-controls" aria-label="Track filters"></div>
@@ -222,6 +232,12 @@
       </div>
     </section>
   </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <p>Built by <a href="https://github.com/Qarait" target="_blank" rel="noreferrer">Qarait</a> &mdash; GitHub</p>
+    </div>
+  </footer>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="app.js"></script>

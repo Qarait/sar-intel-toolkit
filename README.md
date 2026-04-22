@@ -22,7 +22,7 @@ Mission profile presets and their scope are documented in docs/MISSION_PROFILES.
 
 Near-term and longer-term project priorities are documented in docs/ROADMAP.md.
 
-## New in v0.10.1
+## Public aerial validation
 
 The toolkit now includes a documented VisDrone DET validation run for public aerial-drone imagery.
 

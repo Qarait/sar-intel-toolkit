@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.11.4 — Landing page UX polish
+
+Added:
+- Demo loading state for metrics, map area, track cards, and feature snippet
+- Track filters for `all`, `high_confidence_person`, `possible_person`, and `marginal_person`
+- Track-card expand/collapse controls with a default 5-card preview
+- SVG favicon for the static landing page
+
+Fixed:
+- Decoupled GeoJSON loading from Leaflet map rendering so non-map UI still renders if Leaflet is unavailable
+- Improved map fallback behavior while keeping metrics, cards, and snippet visible
+
+Unchanged:
+- Python pipeline behavior
+- Configs
+- Schemas
+- Validation docs
+
 ## v0.10.0 — VisDrone aerial validation harness
 
 Added:

@@ -8,6 +8,7 @@
     name="description"
     content="Public static landing page for SAR-INTEL TOOLKIT, including pipeline overview, validation summary, safety notes, and a GeoJSON map demo."
   >
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -73,7 +74,7 @@
           <p class="section-tag">Demo metrics</p>
           <h2>Metrics derived from the sanitized demo GeoJSON.</h2>
         </div>
-        <p id="metrics-summary">Counting features from <code>assets/demo_tracks.geojson</code> and combining them with the representative demo run summary.</p>
+        <p id="metrics-summary">Metrics pending. <strong>Loading sanitized GeoJSON...</strong></p>
       </div>
       <div class="metrics-grid" id="metrics-grid"></div>
     </section>
@@ -137,9 +138,19 @@
           The demo map loads a sanitized, public-safe GeoJSON asset derived from a non-empty local run. It preserves representative scoring and track properties while removing runtime-only fields and original location context.
         </p>
       </div>
+      <div class="demo-toolbar">
+        <div class="toolbar-group">
+          <span class="toolbar-label">Filter tracks</span>
+          <div class="filter-controls" id="filter-controls" aria-label="Track filters"></div>
+        </div>
+        <div class="toolbar-group toolbar-group-end">
+          <p class="track-summary" id="track-card-summary">Loading sanitized GeoJSON...</p>
+          <button class="button button-secondary track-toggle" id="toggle-track-cards" type="button" hidden>Show all tracks</button>
+        </div>
+      </div>
       <div class="map-layout">
         <div class="map-stack">
-          <div id="map" aria-label="Demo GeoJSON map"></div>
+          <div id="map" aria-label="Demo GeoJSON map" hidden></div>
           <p id="map-fallback" class="map-fallback" hidden>
             Map preview unavailable. The page could not load the Leaflet map library or the demo GeoJSON asset. The sanitized dataset still lives at <code>assets/demo_tracks.geojson</code> and uses GeoJSON coordinates in <code>[longitude, latitude]</code> order.
           </p>
@@ -151,7 +162,7 @@
         </div>
         <div class="snippet-card">
           <h3>Demo feature snippet</h3>
-          <pre><code id="snippet"></code></pre>
+          <pre><code id="snippet">Loading sanitized GeoJSON...</code></pre>
         </div>
       </div>
       <div class="track-card-grid" id="track-card-grid" aria-label="Representative track cards"></div>

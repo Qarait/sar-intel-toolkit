@@ -148,6 +148,8 @@ The current published baseline uses a general pretrained detector. The next vali
 
 The fine-tuning workflow is documented in [`docs/TRAINING_VISDRONE.md`](TRAINING_VISDRONE.md).
 
+The fine-tuning workflow has been added, but no fine-tuned model metrics are published yet. Before/after results should only be added after the VisDrone train split is converted, a model is trained, and the resulting weights are evaluated on the validation split.
+
 After training, this document should report a before/after comparison:
 
 - baseline `yolo26n.pt`

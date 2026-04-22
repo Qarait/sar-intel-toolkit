@@ -44,6 +44,15 @@ datasets/visdrone_person/
   visdrone_person.yaml
 ```
 
+## Dataset requirement
+
+The full fine-tuning workflow requires both:
+
+- `VisDrone2019-DET-train`
+- `VisDrone2019-DET-val`
+
+A validation-only conversion is useful for sanity-checking label formatting, but training requires the train split.
+
 ## Train
 
 ```bash

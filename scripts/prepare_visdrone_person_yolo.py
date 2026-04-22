@@ -106,17 +106,36 @@ def load_image_size(image_path: Path) -> tuple[int, int]:
 
 def convert_annotation_file(annotation_path: Path, *, image_width: int, image_height: int) -> list[str]:
     converted: list[str] = []
+    person_boxes = 0
+    skipped_invalid_boxes = 0
+    skipped_non_person_boxes = 0
     for line in annotation_path.read_text(encoding="utf-8").splitlines():
         if not line.strip():
             continue
-        yolo_line = convert_annotation_line_to_yolo(
-            line,
-            image_width=image_width,
-            image_height=image_height,
-        )
+        parts = [part.strip() for part in line.split(",")]
+        if len(parts) < 6:
+            raise ValueError(f"Malformed annotation line: {line!r}")
+
+        width = float(parts[2])
+        height = float(parts[3])
+        category = int(float(parts[5]))
+        if width <= 0 or height <= 0:
+            skipped_invalid_boxes += 1
+            continue
+        if category not in PERSON_CATEGORY_IDS:
+            skipped_non_person_boxes += 1
+            continue
+
+        yolo_line = convert_annotation_line_to_yolo(line, image_width=image_width, image_height=image_height)
         if yolo_line is not None:
             converted.append(yolo_line)
-    return converted
+            person_boxes += 1
+
+    return converted, {
+        "person_boxes": person_boxes,
+        "skipped_invalid_boxes": skipped_invalid_boxes,
+        "skipped_non_person_boxes": skipped_non_person_boxes,
+    }
 
 
 def write_dataset_yaml(
@@ -135,19 +154,6 @@ def write_dataset_yaml(
     return yaml_path
 
 
-def available_splits(visdrone_root: str | Path, splits: Sequence[str]) -> list[str]:
-    resolved: list[str] = []
-    for split in splits:
-        try:
-            resolve_split_root(visdrone_root, split)
-        except FileNotFoundError:
-            continue
-        resolved.append(split)
-    if not resolved:
-        raise FileNotFoundError(
-            f"Could not find any requested VisDrone DET splits under {Path(visdrone_root)}: {', '.join(splits)}"
-        )
-    return resolved
 def materialize_image(image_path: Path, destination_path: Path, copy_mode: str) -> None:
     if copy_mode == "copy":
         shutil.copy2(image_path, destination_path)
@@ -167,6 +173,9 @@ def prepare_split(split_root: Path, output_root: Path, split: str, *, copy_mode:
 
     image_count = 0
     label_count = 0
+    person_boxes = 0
+    skipped_invalid_boxes = 0
+    skipped_non_person_boxes = 0
 
     for image_path in sorted(images_dir.glob("*.jpg")):
         annotation_path = annotations_dir / f"{image_path.stem}.txt"
@@ -174,7 +183,7 @@ def prepare_split(split_root: Path, output_root: Path, split: str, *, copy_mode:
             raise FileNotFoundError(f"Missing annotation file for {image_path.name}: {annotation_path}")
 
         image_width, image_height = load_image_size(image_path)
-        converted_lines = convert_annotation_file(
+        converted_lines, split_stats = convert_annotation_file(
             annotation_path,
             image_width=image_width,
             image_height=image_height,
@@ -188,8 +197,17 @@ def prepare_split(split_root: Path, output_root: Path, split: str, *, copy_mode:
 
         image_count += 1
         label_count += 1
+        person_boxes += split_stats["person_boxes"]
+        skipped_invalid_boxes += split_stats["skipped_invalid_boxes"]
+        skipped_non_person_boxes += split_stats["skipped_non_person_boxes"]
 
-    return {"images": image_count, "labels": label_count}
+    return {
+        "images": image_count,
+        "labels": label_count,
+        "person_boxes": person_boxes,
+        "skipped_invalid_boxes": skipped_invalid_boxes,
+        "skipped_non_person_boxes": skipped_non_person_boxes,
+    }
 
 
 def prepare_visdrone_person_dataset(
@@ -200,15 +218,25 @@ def prepare_visdrone_person_dataset(
 ) -> dict[str, dict[str, int] | str]:
     output_path = Path(output_root)
     output_path.mkdir(parents=True, exist_ok=True)
-    resolved_splits = available_splits(visdrone_root, splits)
+    resolved_split_roots = {split: resolve_split_root(visdrone_root, split) for split in splits}
 
     results: dict[str, dict[str, int] | str] = {}
-    for split in resolved_splits:
-        split_root = resolve_split_root(visdrone_root, split)
+    total_person_boxes = 0
+    total_skipped_invalid_boxes = 0
+    total_skipped_non_person_boxes = 0
+    for split in splits:
+        split_root = resolved_split_roots[split]
         results[split] = prepare_split(split_root, output_path, split, copy_mode=copy_mode)
+        split_result = results[split]
+        total_person_boxes += split_result["person_boxes"]
+        total_skipped_invalid_boxes += split_result["skipped_invalid_boxes"]
+        total_skipped_non_person_boxes += split_result["skipped_non_person_boxes"]
 
-    yaml_path = write_dataset_yaml(output_path, resolved_splits)
+    yaml_path = write_dataset_yaml(output_path, splits)
     results["dataset_yaml"] = str(yaml_path)
+    results["person_boxes"] = total_person_boxes
+    results["skipped_invalid_boxes"] = total_skipped_invalid_boxes
+    results["skipped_non_person_boxes"] = total_skipped_non_person_boxes
     return results
 
 
@@ -221,9 +249,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
 
     print(f"Prepared YOLO dataset at {Path(args.output_root).resolve()}")
-    for split in available_splits(args.visdrone_root, ("train", "val")):
+    for split in ("train", "val"):
         split_result = results[split]
         print(f"{split}: {split_result['images']} images, {split_result['labels']} label files")
+    print(f"total person boxes: {results['person_boxes']}")
+    print(f"skipped invalid boxes: {results['skipped_invalid_boxes']}")
+    print(f"skipped non-person boxes: {results['skipped_non_person_boxes']}")
     print(f"dataset_yaml: {results['dataset_yaml']}")
     return 0
 

@@ -143,3 +143,24 @@ def test_synthetic_train_val_fixture_produces_expected_yolo_layout(tmp_path) -> 
     assert val_label == "0 0.200000 0.275000 0.200000 0.250000"
 
     assert (output_root / "visdrone_person.yaml").exists()
+    assert result["person_boxes"] == 2
+    assert result["skipped_invalid_boxes"] == 0
+    assert result["skipped_non_person_boxes"] == 1
+
+
+def test_missing_required_split_raises_file_not_found(tmp_path) -> None:
+    module = _load_module()
+
+    visdrone_root = tmp_path / "visdrone"
+    train_root = visdrone_root / "VisDrone2019-DET-train"
+    (train_root / "images").mkdir(parents=True)
+    (train_root / "annotations").mkdir(parents=True)
+
+    output_root = tmp_path / "prepared"
+
+    try:
+        module.prepare_visdrone_person_dataset(visdrone_root, output_root)
+    except FileNotFoundError as exc:
+        assert "val" in str(exc)
+    else:
+        raise AssertionError("Expected FileNotFoundError when a required split is missing")

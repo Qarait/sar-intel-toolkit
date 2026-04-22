@@ -511,6 +511,7 @@ h2 {
   display: inline-flex;
   align-items: center;
   flex-shrink: 0;
+  white-space: nowrap;
   min-height: 28px;
   padding: 0 10px;
   border-radius: 999px;

@@ -66,9 +66,11 @@ This validation checks aerial-person detection behavior. It does not validate op
 Dataset: VisDrone2019-DET-val  
 Task: Person-category detection sanity check  
 Categories evaluated: `pedestrian`, `people`  
-Detector/model: `yolo26n.pt`  
+Model: `yolo26n.pt`  
 Confidence threshold: 0.25  
 IoU threshold: 0.5  
+
+The public baseline reported here was run with `yolo26n.pt`. Other configs may use a different lightweight detector such as `yolov8n.pt`; results should only be compared when the model, confidence threshold, IoU threshold, and dataset split are held constant.
 
 ### Small subset run
 

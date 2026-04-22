@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.11.5 — Documentation consistency cleanup
+
+Fixed:
+- Replaced stale versioned README validation heading with a stable validation heading
+- Updated roadmap to separate completed foundations from future work
+- Clarified that the published VisDrone baseline used `yolo26n.pt`
+- Kept validation numbers unchanged
+
+Unchanged:
+- Pipeline behavior
+- Detector behavior
+- Landing page behavior
+- Output schemas
+
 ## v0.11.4 — Landing page UX polish
 
 Added:

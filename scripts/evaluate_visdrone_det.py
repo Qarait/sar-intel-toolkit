@@ -36,7 +36,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--dataset-root", required=True, help="Path to VisDrone2019-DET-val or its parent directory.")
     parser.add_argument("--split", default="val", choices=["val"], help="VisDrone DET split to evaluate.")
     parser.add_argument("--max-images", type=int, default=None, help="Optional cap on images evaluated.")
-    parser.add_argument("--model", default="yolo26n.pt", help="Model path or identifier passed to PersonDetector.")
+    parser.add_argument(
+        "--model",
+        default="yolo26n.pt",
+        help=(
+            "Model path or identifier passed to PersonDetector. "
+            "The published VisDrone baseline uses yolo26n.pt."
+        ),
+    )
     parser.add_argument(
         "--confidence-threshold",
         type=float,

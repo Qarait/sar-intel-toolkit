@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.12.0 — VisDrone person-detector fine-tuning workflow
+
+Added:
+- VisDrone person-only YOLO dataset conversion workflow
+- Training wrapper for fine-tuning a lightweight aerial-person detector
+- Tests for VisDrone person-category conversion
+- Training documentation for dataset preparation, training, and evaluation
+
+Unchanged:
+- Main SAR pipeline behavior
+- Detector runtime behavior
+- Tracker/geotagging/telemetry behavior
+- Output schemas
+- Existing validation numbers
+
+Notes:
+- This release adds the workflow for fine-tuning.
+- Fine-tuned model weights and before/after metrics should be published only after training and evaluation complete.
+
 ## v0.11.7 — Landing page attribution and demo-map clarity
 
 Fixed:

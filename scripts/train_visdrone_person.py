@@ -36,6 +36,7 @@ def run_training(
     dataset_yaml = Path(data)
     if not dataset_yaml.exists():
         raise FileNotFoundError(f"Missing training data file: {dataset_yaml}")
+    expected_best_path = Path(project) / name / "weights" / "best.pt"
 
     try:
         from ultralytics import YOLO
@@ -56,11 +57,10 @@ def run_training(
 
     results = trainer.train(**kwargs)
     save_dir = getattr(results, "save_dir", None)
-    best_path = Path(save_dir) / "weights" / "best.pt" if save_dir is not None else None
     return {
         "dataset_yaml": str(dataset_yaml),
         "save_dir": str(save_dir) if save_dir is not None else None,
-        "best_path": str(best_path) if best_path is not None else None,
+        "best_path": str(expected_best_path),
         "model": model,
     }
 
@@ -76,9 +76,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         project=args.project,
         name=args.name,
     )
-    print(f"data: {result['dataset_yaml']}")
-    print(f"model: {result['model']}")
-    print(f"save_dir: {result['save_dir']}")
     print(f"likely_best_pt: {result['best_path']}")
     return 0
 

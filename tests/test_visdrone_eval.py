@@ -79,3 +79,110 @@ def test_compute_metrics_handles_zero_denominators_safely() -> None:
         "recall": 0.0,
         "f1": 0.0,
     }
+
+
+def test_parse_sweep_thresholds_parses_and_sorts_unique_values() -> None:
+    module = _load_module()
+
+    assert module.parse_sweep_thresholds("0.50,0.10,0.25,0.25") == [0.10, 0.25, 0.50]
+
+
+def test_parse_sweep_thresholds_rejects_invalid_values() -> None:
+    module = _load_module()
+
+    for value in ["-0.1", "1.5", "not-a-number", ""]:
+        try:
+            module.parse_sweep_thresholds(value)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"Expected ValueError for {value!r}")
+
+
+def test_parse_args_accepts_sweep_arguments() -> None:
+    module = _load_module()
+
+    args = module.parse_args(
+        [
+            "--dataset-root",
+            "dataset",
+            "--sweep",
+            "--sweep-thresholds",
+            "0.10,0.25,0.50",
+        ]
+    )
+
+    assert args.dataset_root == "dataset"
+    assert args.sweep is True
+    assert args.confidence_threshold == 0.25
+    assert args.sweep_thresholds == "0.10,0.25,0.50"
+
+
+def test_parse_args_uses_default_sweep_thresholds() -> None:
+    module = _load_module()
+
+    args = module.parse_args([
+        "--dataset-root",
+        "dataset",
+    ])
+
+    assert args.sweep is False
+    assert args.sweep_thresholds == "0.10,0.25,0.50"
+
+
+def test_filter_detections_by_threshold() -> None:
+    module = _load_module()
+
+    detections = [
+        {"confidence": 0.09, "bbox": [0, 0, 10, 10]},
+        {"confidence": 0.25, "bbox": [0, 0, 10, 10]},
+        {"confidence": 0.90, "bbox": [0, 0, 10, 10]},
+    ]
+
+    filtered = module.filter_detections_by_threshold(detections, 0.25)
+    assert [item["confidence"] for item in filtered] == [0.25, 0.90]
+
+
+def test_summarize_cached_evaluation_uses_same_detections_for_multiple_thresholds() -> None:
+    module = _load_module()
+
+    image_records = [
+        {
+            "image": "sample.jpg",
+            "gt_boxes": [[10.0, 10.0, 30.0, 30.0]],
+            "detections": [
+                {"confidence": 0.20, "bbox": [10.0, 10.0, 30.0, 30.0]},
+                {"confidence": 0.90, "bbox": [50.0, 50.0, 70.0, 70.0]},
+            ],
+        }
+    ]
+
+    low = module.summarize_cached_evaluation(
+        image_records,
+        confidence_threshold=0.10,
+        iou_threshold=0.5,
+        dataset_root="/tmp/VisDrone2019-DET-val",
+        split="val",
+        max_images=None,
+        model="yolo26n.pt",
+    )
+
+    high = module.summarize_cached_evaluation(
+        image_records,
+        confidence_threshold=0.50,
+        iou_threshold=0.5,
+        dataset_root="/tmp/VisDrone2019-DET-val",
+        split="val",
+        max_images=None,
+        model="yolo26n.pt",
+    )
+
+    assert low["detection_count"] == 2
+    assert low["true_positives"] == 1
+    assert low["false_positives"] == 1
+    assert low["false_negatives"] == 0
+
+    assert high["detection_count"] == 1
+    assert high["true_positives"] == 0
+    assert high["false_positives"] == 1
+    assert high["false_negatives"] == 1

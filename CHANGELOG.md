@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.11.7 — Landing page attribution and demo-map clarity
+
+Fixed:
+- Added visible project-owner attribution to the landing page
+- Added a map-specific disclaimer clarifying that demo coordinates are sanitized visualization output
+- Fixed long track-class badge wrapping on track cards
+
+Unchanged:
+- Core pipeline behavior
+- Output schemas
+- Validation numbers
+- Demo GeoJSON data
+
 ## v0.11.6 — VisDrone confidence threshold sweep
 
 Added:

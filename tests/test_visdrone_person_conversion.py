@@ -96,6 +96,7 @@ def test_generated_dataset_yaml_contains_person_name(tmp_path) -> None:
     contents = yaml_path.read_text(encoding="utf-8")
 
     assert yaml_path.name == "visdrone_person.yaml"
+    assert f"path: {output_root.resolve().as_posix()}" in contents
     assert "names:" in contents
     assert "0: person" in contents
     assert "train: images/train" in contents

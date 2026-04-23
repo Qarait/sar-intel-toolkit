@@ -145,7 +145,7 @@ def write_dataset_yaml(
 ) -> Path:
     output_path = Path(output_root)
     yaml_path = output_path / "visdrone_person.yaml"
-    lines = ["path: ."]
+    lines = [f"path: {output_path.resolve().as_posix()}"]
     if "train" in splits:
         lines.append("train: images/train")
     if "val" in splits:

@@ -3,7 +3,7 @@ import shutil
 from pathlib import Path
 from typing import Sequence
 
-import cv2
+from PIL import Image
 
 
 PERSON_CATEGORY_IDS = {1, 2}
@@ -97,10 +97,11 @@ def resolve_split_root(visdrone_root: str | Path, split: str) -> Path:
 
 
 def load_image_size(image_path: Path) -> tuple[int, int]:
-    frame = cv2.imread(str(image_path))
-    if frame is None:
-        raise ValueError(f"Unable to read image: {image_path}")
-    height, width = frame.shape[:2]
+    try:
+        with Image.open(image_path) as frame:
+            width, height = frame.size
+    except OSError as exc:
+        raise ValueError(f"Unable to read image: {image_path}") from exc
     return width, height
 
 
@@ -176,8 +177,9 @@ def prepare_split(split_root: Path, output_root: Path, split: str, *, copy_mode:
     person_boxes = 0
     skipped_invalid_boxes = 0
     skipped_non_person_boxes = 0
+    image_paths = sorted(images_dir.glob("*.jpg"))
 
-    for image_path in sorted(images_dir.glob("*.jpg")):
+    for index, image_path in enumerate(image_paths, start=1):
         annotation_path = annotations_dir / f"{image_path.stem}.txt"
         if not annotation_path.exists():
             raise FileNotFoundError(f"Missing annotation file for {image_path.name}: {annotation_path}")
@@ -200,6 +202,9 @@ def prepare_split(split_root: Path, output_root: Path, split: str, *, copy_mode:
         person_boxes += split_stats["person_boxes"]
         skipped_invalid_boxes += split_stats["skipped_invalid_boxes"]
         skipped_non_person_boxes += split_stats["skipped_non_person_boxes"]
+
+        if index == 1 or index % 250 == 0 or index == len(image_paths):
+            print(f"{split}: processed {index}/{len(image_paths)} images", flush=True)
 
     return {
         "images": image_count,

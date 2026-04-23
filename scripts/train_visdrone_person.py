@@ -3,6 +3,20 @@ from pathlib import Path
 from typing import Any, Sequence
 
 
+def parse_batch(value: str) -> int | float:
+    normalized = value.strip().lower()
+    if normalized == "auto":
+        return -1
+
+    try:
+        return int(normalized)
+    except ValueError:
+        try:
+            return float(normalized)
+        except ValueError as exc:
+            raise argparse.ArgumentTypeError("batch must be an integer, float, or 'auto'.") from exc
+
+
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train a person-only YOLO model on a prepared VisDrone dataset.")
     parser.add_argument(
@@ -17,7 +31,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--epochs", type=int, default=50, help="Training epochs.")
     parser.add_argument("--imgsz", type=int, default=640, help="Training image size.")
-    parser.add_argument("--batch", default="auto", help="Training batch size or 'auto'.")
+    parser.add_argument("--batch", type=parse_batch, default=-1, help="Training batch size, memory fraction, or 'auto'.")
     parser.add_argument("--project", default="runs/visdrone_person", help="Training project directory.")
     parser.add_argument("--name", default="yolo26n_visdrone_person", help="Training run name.")
     return parser.parse_args(argv)
@@ -29,7 +43,7 @@ def run_training(
     model: str,
     epochs: int,
     imgsz: int,
-    batch: str | int,
+    batch: int | float,
     project: str,
     name: str,
 ) -> dict[str, Any]:

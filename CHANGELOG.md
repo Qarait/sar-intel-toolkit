@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.12.1 — VisDrone workflow fixes
+
+Fixed:
+- Wrote an absolute dataset root into `visdrone_person.yaml` so Ultralytics resolves train/val images correctly
+- Normalized `--batch auto` handling in the training wrapper for the installed Ultralytics build
+- Improved conversion performance by reading image dimensions from headers with Pillow and added progress output
+
+Unchanged:
+- Main SAR pipeline behavior
+- Detector runtime behavior
+- Output schemas
+- Published validation numbers
+
+Notes:
+- This patch fixes the VisDrone fine-tuning workflow discovered during the smoke-run verification.
+- No fine-tuned detector results are published in this release.
+
 ## v0.12.0 — VisDrone person-detector fine-tuning workflow
 
 Added:

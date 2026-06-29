@@ -107,7 +107,7 @@ pre {
   content: "";
   width: 24px;
   height: 2px;
-  background: currentColor;
+  background: var(--signal);
 }
 
 h1,
@@ -301,7 +301,7 @@ h3 {
 .map-copy p,
 .safety-list,
 .validation-panel p,
-.panel p {
+.panel p:not(.section-tag) {
   color: var(--muted);
 }
 

@@ -295,12 +295,12 @@ h3 {
 }
 
 .intro-copy,
-.metrics-heading p,
+.metrics-heading p:not(.section-tag),
 .note,
 .map-disclaimer,
-.map-copy p,
+.map-copy p:not(.section-tag),
 .safety-list,
-.validation-panel p,
+.validation-panel p:not(.section-tag),
 .panel p:not(.section-tag) {
   color: var(--muted);
 }

@@ -1,42 +1,42 @@
 const baseMetrics = [
   {
-    label: "Frame-level alerts",
+    label: "Frame-level signals",
     value: "2502",
-    detail: "Representative count from the local static demo run.",
+    detail: "Possible-person alerts from the representative static demo run.",
   },
   {
     label: "Confirmed tracks",
     value: "23",
-    detail: "Deduplicated tracks after scoring and tracking.",
+    detail: "Repeated detections grouped into reviewable track objects.",
   },
   {
-    label: "GeoJSON features",
+    label: "Map features",
     value: "pending",
-    detail: "Count loaded directly from the sanitized demo asset.",
+    detail: "Loaded directly from the sanitized public GeoJSON asset.",
   },
   {
-    label: "Telemetry mode",
+    label: "Telemetry",
     value: "simulated",
-    detail: "Static demo uses simulated telemetry inputs.",
+    detail: "Static demo uses repeatable simulated telemetry inputs.",
   },
   {
-    label: "Geotagging mode",
-    value: "pose_aware_flat_ground",
-    detail: "Flat-ground pose-aware projection for approximate coordinates.",
+    label: "Geotagging",
+    value: "pose aware",
+    detail: "Flat-ground pose-aware projection for approximate demo coordinates.",
   },
   {
-    label: "Tracking model",
+    label: "Tracking",
     value: "kalman",
-    detail: "Kalman-assisted multi-frame track continuity.",
+    detail: "Kalman-assisted continuity across short missed detections.",
   },
 ];
 
 const TRACK_CARD_LIMIT = 5;
 const FILTER_OPTIONS = [
-  { value: "all", label: "All" },
-  { value: "high_confidence_person", label: "high_confidence_person" },
-  { value: "possible_person", label: "possible_person" },
-  { value: "marginal_person", label: "marginal_person" },
+  { value: "all", label: "All tracks" },
+  { value: "high_confidence_person", label: "High confidence" },
+  { value: "possible_person", label: "Possible person" },
+  { value: "marginal_person", label: "Marginal" },
 ];
 
 let allFeatures = [];
@@ -111,7 +111,7 @@ function renderMetrics(features) {
   const totalCount = allFeatures.length;
 
   const metrics = baseMetrics.map((metric) => {
-    if (metric.label !== "GeoJSON features") {
+    if (metric.label !== "Map features") {
       return metric;
     }
 
@@ -336,10 +336,10 @@ function renderMapIfAvailable(features, geojson) {
     onEachFeature(feature, marker) {
       const properties = feature.properties || {};
       marker.bindPopup(
-        `Track ${properties.track_id}<br>` +
-        `Class: ${properties.track_class}<br>` +
-        `Score: ${properties.track_score}<br>` +
-        `Hits: ${properties.hits}`
+        `<strong>Track ${properties.track_id}</strong><br>` +
+        `Review class: ${properties.track_class}<br>` +
+        `Confidence score: ${properties.track_score}<br>` +
+        `Frame hits: ${properties.hits}`
       );
     },
   }).addTo(mapInstance);

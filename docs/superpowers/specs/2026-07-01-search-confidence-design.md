@@ -51,7 +51,7 @@ Outputs:
 - Same-manifest comparison result.
 - Explicit pass/fail gate for whether a model counts as improved.
 
-Improvement should require recall improvement at fixed thresholds without unacceptable precision collapse, plus AP/PR-curve improvement on the same pinned validation manifest.
+Improvement should require recall improvement at fixed thresholds without unacceptable precision collapse, plus AP/PR-curve improvement on the same pinned validation manifest. Coverage-confidence code must treat recall as an input that can be recalibrated after fine-tuning; it must not bake the current baseline recall into the model as a final truth.
 
 ## Module 2: Coverage Confidence
 
@@ -76,7 +76,9 @@ Validation must ship with the prototype:
 - Multiple pass-count and altitude scenarios.
 - Assertions that low-coverage and planted-miss cells are classified as uncertain.
 
-The map is not trustworthy merely because it looks good; it is trustworthy only if its uncertainty behavior is tested.
+The first prototype validates mechanics and ranking behavior on synthetic inputs: weaker coverage produces higher miss probability, planted targets without detections remain uncertain, and uncertain cells can be prioritized for review. It does not yet prove calibrated real-world probabilities. A cell with `0.70` miss probability should not be described as a real-world 70% miss rate until the detector has been calibrated against appropriate aerial/SAR data and the coverage model has been validated against held-out planted-target or field-like footage.
+
+The map is not trustworthy merely because it looks good; it is trustworthy only if its uncertainty behavior is tested and its recall inputs are recalibrated when better detector metrics become available.
 
 ## Module 3: Motion-First Tracklets
 
@@ -198,7 +200,7 @@ Each intelligence feature needs a matching validation method.
 Required validation by module:
 
 - Detector: pinned manifest, fixed thresholds, AP/PR curve.
-- Coverage: planted-target and synthetic-miss calibration tests.
+- Coverage: planted-target and synthetic-miss mechanics/ranking tests first; calibrated probability tests only after calibrated detector recall inputs exist.
 - Motion: persistence, false-positive, and missed-frame tests.
 - Review queue: deterministic ranking tests and reviewer-workload metrics.
 - Failure injector: perturbation tests and graceful-degradation assertions.

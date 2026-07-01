@@ -51,3 +51,4 @@ runs/
 # Development artifacts
 *.zip
 *.patch
+.worktrees/

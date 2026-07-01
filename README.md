@@ -2,31 +2,47 @@
 
 [![CI](https://github.com/Qarait/sar-intel-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/Qarait/sar-intel-toolkit/actions/workflows/ci.yml)
 
-Simulation-first mission intelligence toolkit for search-and-rescue drone workflows.
+**Drone footage into rescue intelligence.**
 
-It generates search grids, processes video detections, fuses detections with drone telemetry, tracks possible people across frames, and exports structured alerts, tracks, and map-ready GeoJSON.
+SAR-INTEL TOOLKIT is an open-source humanitarian search-and-rescue intelligence pipeline. It turns drone-style video and telemetry into possible-person detections, confirmed detection tracks, confidence scores, run provenance, and map-ready GeoJSON.
 
-See CHANGELOG.md for version history and capability progression.
+![SAR-INTEL TOOLKIT public demo](docs/assets/public-demo-preview.png)
 
 Project landing page: https://qarait.github.io/sar-intel-toolkit/
 
-Project constraints and non-goals are documented in docs/LIMITATIONS.md.
+## Why this matters
 
-Safety and intended-use guidance are documented in docs/SAFETY.md.
+Drone search footage can become noisy fast: repeated detections, uncertain positions, and too many frames for a human reviewer to scan manually. This toolkit turns that stream into structured outputs that can be inspected, scored, mapped, and improved.
 
-Detailed system flow and module responsibilities are documented in docs/ARCHITECTURE.md.
+## Public proof
 
-Configuration options and section-by-section YAML reference are documented in docs/CONFIGURATION.md.
+- Automated tests live in `tests/`.
+- Output contracts live in `schemas/` and are validated in test coverage.
+- Public aerial-drone validation results live in `docs/VISDRONE_VALIDATION.md`.
+- Project constraints and non-goals live in `docs/LIMITATIONS.md`.
+- Safety and intended-use guidance live in `docs/SAFETY.md`.
+- System flow and module responsibilities live in `docs/ARCHITECTURE.md`.
+- Configuration options live in `docs/CONFIGURATION.md`.
+- Mission profile presets live in `docs/MISSION_PROFILES.md`.
+- Near-term priorities live in `docs/ROADMAP.md`.
 
-Mission profile presets and their scope are documented in docs/MISSION_PROFILES.md.
+## Visual demo
 
-Near-term and longer-term project priorities are documented in docs/ROADMAP.md.
+The public site presents a sanitized demo run with:
+
+- mission-style summary metrics
+- confidence-scored track cards
+- interactive GeoJSON map features
+- a representative mission report preview
+- validation and safety context
+
+The demo is static and public-safe. It is intended to communicate the workflow, not to represent a real incident location.
 
 ## Public aerial validation
 
 The toolkit now includes a documented VisDrone DET validation run for public aerial-drone imagery.
 
-The validation harness evaluates the existing person detector against VisDrone `pedestrian` and `people` annotations and reports precision, recall, F1, TP, FP, FN, and per-image summaries.
+The validation harness evaluates the existing person detector against VisDrone `pedestrian` and `people` annotations and reports fixed-threshold precision, recall, F1, average precision, PR-curve points, TP, FP, FN, per-image summaries, and a SHA256-pinned validation manifest.
 
 Initial full validation split result:
 
@@ -40,16 +56,8 @@ Initial full validation split result:
 - Recall: 0.0574
 - F1: 0.1073
 
-This is an aerial-person detection sanity check, not an operational SAR benchmark. The baseline model was not trained specifically on VisDrone aerial-person imagery, so low recall is expected.
+This is an aerial-person detection sanity check, not an operational SAR benchmark. The baseline model was not trained specifically on VisDrone aerial-person imagery, so low recall is expected. Future model claims should compare against the same pinned validation manifest and fixed thresholds, not a best-found recall threshold.
 
-## Proof stack
-
-- Automated tests live in `tests/`.
-- Output contracts live in `schemas/` and are validated in test coverage.
-- Real validation notes live in `docs/VALIDATION.md`.
-- Public aerial-drone validation results: `docs/VISDRONE_VALIDATION.md`.
-- Each run writes `output/run_manifest.json` to record provenance.
-- CI runs compile checks, pytest, and offline/replay smoke tests.
 
 ## Current capabilities
 

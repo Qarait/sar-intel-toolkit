@@ -65,3 +65,23 @@ python scripts/train_visdrone_person.py \
   --project runs/visdrone_person \
   --name yolo26n_visdrone_person
 ```
+
+## Evaluate without threshold-shopping
+
+After training, evaluate the model against the same pinned validation manifest used by the baseline:
+
+```bash
+python scripts/evaluate_visdrone_det.py \
+  --dataset-root /path/to/VisDrone2019-DET-val \
+  --split val \
+  --model runs/visdrone_person/yolo26n_visdrone_person/weights/best.pt \
+  --iou-threshold 0.5 \
+  --sweep \
+  --sweep-thresholds 0.10,0.25,0.50 \
+  --validation-manifest output/visdrone_det_val_manifest.json \
+  --output output/visdrone_det_finetuned_sweep.json
+```
+
+Treat `output/visdrone_det_val_manifest.json` as part of the benchmark definition. If the manifest checksum changes, the run is a new benchmark and should not be compared directly with the published baseline.
+
+A fine-tuned model should only be described as improved when recall improves at fixed thresholds without an unacceptable precision collapse, and average precision / PR-curve behavior also improves on the same pinned manifest.

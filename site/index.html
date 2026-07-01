@@ -3,11 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SAR-INTEL TOOLKIT</title>
+  <title>SAR-INTEL TOOLKIT | Drone footage into rescue intelligence</title>
   <meta
     name="description"
-    content="Public static landing page for SAR-INTEL TOOLKIT, including pipeline overview, validation summary, safety notes, and a GeoJSON map demo."
+    content="Simulation-first humanitarian SAR intelligence toolkit that turns drone video and telemetry into detections, tracks, confidence scores, and map-ready GeoJSON."
   >
+  <meta property="og:title" content="SAR-INTEL TOOLKIT">
+  <meta property="og:description" content="Drone footage into rescue intelligence.">
+  <meta property="og:image" content="assets/social-preview.png">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,26 +20,54 @@
 </head>
 <body>
   <header class="hero" id="top">
+    <div class="hero-media" aria-hidden="true"></div>
     <div class="hero-inner">
-      <p class="eyebrow">Simulation-first search-and-rescue drone intelligence pipeline.</p>
-      <h1>SAR-INTEL TOOLKIT</h1>
-      <p class="subtitle">Simulation-first search-and-rescue drone intelligence pipeline.</p>
-      <p class="hero-copy">
-        Turns drone-style video and telemetry into geotagged alerts, confirmed tracks, confidence scores, and map-ready GeoJSON.
+      <p class="eyebrow">Simulation-first humanitarian SAR intelligence</p>
+      <h1>Drone footage into rescue intelligence.</h1>
+      <p class="subtitle">
+        SAR-INTEL TOOLKIT transforms drone-style video and telemetry into possible-person detections, confirmed detection tracks, confidence scores, and map-ready GeoJSON.
       </p>
       <div class="hero-actions">
-        <a class="button button-primary" href="https://github.com/Qarait/sar-intel-toolkit" target="_blank" rel="noreferrer">View GitHub</a>
-        <a class="button button-secondary" href="https://github.com/Qarait/sar-intel-toolkit/blob/main/docs/VISDRONE_VALIDATION.md" target="_blank" rel="noreferrer">Read Validation</a>
-        <a class="button button-tertiary" href="https://github.com/Qarait/sar-intel-toolkit/blob/main/docs/SAFETY.md" target="_blank" rel="noreferrer">View Safety Notes</a>
+        <a class="button button-primary" href="#demo">View Demo</a>
+        <a class="button button-secondary" href="https://github.com/Qarait/sar-intel-toolkit" target="_blank" rel="noreferrer">See GitHub</a>
+        <a class="button button-tertiary" href="#validation">Explore Validation</a>
+      </div>
+      <div class="hero-proof" aria-label="Project proof points">
+        <article><strong>23</strong><span>confirmed detection tracks</span></article>
+        <article><strong>GeoJSON</strong><span>map-ready outputs</span></article>
+        <article><strong>Open</strong><span>MIT licensed toolkit</span></article>
       </div>
     </div>
   </header>
 
   <main class="page">
+    <section class="story-strip" aria-label="How SAR-INTEL TOOLKIT works">
+      <article>
+        <span>01</span>
+        <h2>Scan</h2>
+        <p>Drone-style footage and mission telemetry become structured review inputs.</p>
+      </article>
+      <article>
+        <span>02</span>
+        <h2>Detect</h2>
+        <p>Possible-person detections are converted into geotagged review alerts.</p>
+      </article>
+      <article>
+        <span>03</span>
+        <h2>Track</h2>
+        <p>Repeated detections are linked into confidence-scored tracks.</p>
+      </article>
+      <article>
+        <span>04</span>
+        <h2>Map</h2>
+        <p>Confirmed detection tracks export as GeoJSON for maps, dashboards, and review.</p>
+      </article>
+    </section>
+
     <section class="panel intro-panel">
       <div>
-        <p class="section-tag">Problem</p>
-        <h2>Search-and-rescue review quickly becomes noisy.</h2>
+        <p class="section-tag">Mission noise</p>
+        <h2>Search footage becomes usable intelligence when repeated detections are connected.</h2>
       </div>
       <div class="intro-copy">
         <p>
@@ -50,7 +81,7 @@
 
     <section class="panel">
       <p class="section-tag">Pipeline</p>
-      <h2>From mission plan to map-ready output.</h2>
+      <h2>Plan, detect, geotag, track, score, export.</h2>
       <div class="pipeline" aria-label="Pipeline steps">
         <div class="step"><span>Search Grid</span></div>
         <div class="arrow" aria-hidden="true">&rarr;</div>
@@ -71,15 +102,15 @@
     <section class="panel metrics-panel">
       <div class="metrics-heading">
         <div>
-          <p class="section-tag">Demo metrics</p>
-          <h2>Metrics derived from the sanitized demo GeoJSON.</h2>
+          <p class="section-tag">Demo intelligence</p>
+          <h2>Live metrics from the sanitized public demo.</h2>
         </div>
         <p id="metrics-summary">Metrics pending. <strong>Loading sanitized GeoJSON...</strong></p>
       </div>
       <div class="metrics-grid" id="metrics-grid"></div>
     </section>
 
-    <section class="panel validation-panel">
+    <section class="panel validation-panel" id="validation">
       <div>
         <p class="section-tag">Public validation</p>
         <h2>One documented aerial-person baseline.</h2>
@@ -130,10 +161,32 @@
       </p>
     </section>
 
-    <section class="panel map-panel">
+    <section class="panel visual-proof-panel">
+      <div>
+        <p class="section-tag">Visual proof</p>
+        <h2>From noisy footage to reviewable rescue signals.</h2>
+        <p>
+          The public demo presents the toolkit as a rescue-intelligence layer: possible-person detections become scored detection tracks, tracks become map features, and every output stays available for human review.
+        </p>
+      </div>
+      <div class="proof-stage" aria-label="Detection and map preview">
+        <div class="frame-preview">
+          <span class="scan-line"></span>
+          <div class="bbox bbox-primary"><strong>possible_person</strong><small>0.91</small></div>
+          <div class="bbox bbox-secondary"><strong>possible_person</strong><small>0.74</small></div>
+        </div>
+        <div class="mission-card">
+          <span>Mission intelligence preview</span>
+          <strong>23 confirmed detection tracks</strong>
+          <p>Confidence-scored outputs ready for map review and downstream tools.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel map-panel" id="demo">
       <div class="map-copy">
         <p class="section-tag">Map-ready GeoJSON</p>
-        <h2>Confirmed tracks can be visualized in standard web maps and GIS tools.</h2>
+        <h2>Confirmed detection tracks can be visualized in standard web maps and GIS tools.</h2>
         <div class="map-disclaimer">
           <p><strong>Demo Disclaimer:</strong></p>
           <ul>
@@ -182,6 +235,31 @@
       <div class="track-card-grid" id="track-card-grid" aria-label="Representative track cards"></div>
     </section>
 
+    <section class="panel report-panel">
+      <div>
+        <p class="section-tag">Mission report</p>
+        <h2>A run becomes a human-readable rescue intelligence brief.</h2>
+        <p>
+          The toolkit already exports machine-readable files. The public presentation shows how those artifacts become a concise report for review, triage, and communication.
+        </p>
+      </div>
+      <div class="report-preview">
+        <div class="report-header">
+          <span>SAR-INTEL brief</span>
+          <strong>Sanitized demo run</strong>
+        </div>
+        <dl>
+          <div><dt>Alerts</dt><dd>2,502</dd></div>
+          <div><dt>Confirmed tracks</dt><dd>23</dd></div>
+          <div><dt>Geotag mode</dt><dd>pose_aware_flat_ground</dd></div>
+          <div><dt>Output</dt><dd>tracks.geojson</dd></div>
+        </dl>
+        <p>
+          Designed for research, simulation, and human-reviewed SAR workflows. Not a replacement for trained responders or operational command decisions.
+        </p>
+      </div>
+    </section>
+
     <section class="panel outputs-panel">
       <div>
         <p class="section-tag">Outputs</p>
@@ -198,7 +276,7 @@
         </article>
         <article>
           <h3>tracks.geojson</h3>
-          <p>map-ready confirmed track features</p>
+          <p>map-ready confirmed detection-track features</p>
         </article>
         <article>
           <h3>run_manifest.json</h3>

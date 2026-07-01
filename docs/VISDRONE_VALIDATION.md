@@ -192,6 +192,23 @@ After training, this document should report a before/after comparison:
 
 The goal is to improve aerial-person recall while preserving honest reporting of false positives. A model should count as improved only when recall improves at fixed thresholds without an unacceptable precision collapse, and average precision / PR-curve behavior also improves on the same pinned manifest.
 
+
+## Fine-tune comparison gate
+
+After producing baseline and candidate sweep outputs on the same pinned validation manifest, run the comparison gate:
+
+```bash
+python scripts/compare_visdrone_runs.py \
+  --baseline output/visdrone_det_sweep.json \
+  --candidate output/visdrone_det_finetuned_sweep.json \
+  --recall-delta 0.05 \
+  --min-precision-ratio 0.90 \
+  --ap-delta 0.03 \
+  --output output/visdrone_det_comparison.json
+```
+
+A candidate detector should not be described as improved unless this gate passes on the same validation manifest. The gate requires matching manifest checksums, recall improvement at matching fixed thresholds, no unacceptable precision collapse, and average-precision improvement. This protects the project from accidental split drift and from threshold-shopping that makes recall look better while the detector becomes less useful.
+
 ## How To Improve This Later
 
 - Fine-tune the detector on aerial-person data, including VisDrone-like viewpoints and object scales.

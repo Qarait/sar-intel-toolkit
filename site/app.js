@@ -5,9 +5,9 @@ const baseMetrics = [
     detail: "Possible-person alerts from the representative static demo run.",
   },
   {
-    label: "Confirmed tracks",
+    label: "Detection tracks",
     value: "23",
-    detail: "Repeated detections grouped into reviewable track objects.",
+    detail: "Repeated detections grouped into reviewable detection-track objects.",
   },
   {
     label: "Map features",
@@ -53,6 +53,32 @@ function formatCoordinate(value) {
   }
 
   return value.toFixed(6);
+}
+
+function displayValue(value, fallback = "n/a") {
+  return value ?? fallback;
+}
+
+function appendTextElement(parent, tagName, text, className) {
+  const element = document.createElement(tagName);
+  if (className) {
+    element.className = className;
+  }
+  element.textContent = String(text);
+  parent.appendChild(element);
+  return element;
+}
+
+function appendDefinition(parent, term, value) {
+  const row = document.createElement("div");
+  appendTextElement(row, "dt", term);
+  appendTextElement(row, "dd", displayValue(value));
+  parent.appendChild(row);
+}
+
+function appendPopupLine(parent, label, value) {
+  parent.appendChild(document.createElement("br"));
+  parent.appendChild(document.createTextNode(`${label}: ${displayValue(value)}`));
 }
 
 function setMapMessage(message, hideMap = true) {
@@ -198,19 +224,21 @@ function renderTrackCards(features, options = {}) {
     const coordinates = feature.geometry?.coordinates || [null, null];
     const card = document.createElement("article");
     card.className = "track-card";
-    card.innerHTML = `
-      <div class="track-card-head">
-        <h3>Track ${properties.track_id ?? "?"}</h3>
-        <span class="track-pill">${properties.track_class ?? "unknown"}</span>
-      </div>
-      <dl>
-        <div><dt>Score</dt><dd>${properties.track_score ?? "n/a"}</dd></div>
-        <div><dt>Hits</dt><dd>${properties.hits ?? "n/a"}</dd></div>
-        <div><dt>Mean confidence</dt><dd>${properties.mean_confidence ?? "n/a"}</dd></div>
-        <div><dt>Duration (s)</dt><dd>${properties.duration_seconds ?? "n/a"}</dd></div>
-        <div><dt>Coordinates</dt><dd>[${formatCoordinate(coordinates[0])}, ${formatCoordinate(coordinates[1])}]</dd></div>
-      </dl>
-    `;
+
+    const head = document.createElement("div");
+    head.className = "track-card-head";
+    appendTextElement(head, "h3", `Track ${displayValue(properties.track_id, "?")}`);
+    appendTextElement(head, "span", displayValue(properties.track_class, "unknown"), "track-pill");
+    card.appendChild(head);
+
+    const details = document.createElement("dl");
+    appendDefinition(details, "Score", properties.track_score);
+    appendDefinition(details, "Hits", properties.hits);
+    appendDefinition(details, "Mean confidence", properties.mean_confidence);
+    appendDefinition(details, "Duration (s)", properties.duration_seconds);
+    appendDefinition(details, "Coordinates", `[${formatCoordinate(coordinates[0])}, ${formatCoordinate(coordinates[1])}]`);
+    card.appendChild(details);
+
     container.appendChild(card);
   }
 }
@@ -335,12 +363,12 @@ function renderMapIfAvailable(features, geojson) {
     },
     onEachFeature(feature, marker) {
       const properties = feature.properties || {};
-      marker.bindPopup(
-        `<strong>Track ${properties.track_id}</strong><br>` +
-        `Review class: ${properties.track_class}<br>` +
-        `Confidence score: ${properties.track_score}<br>` +
-        `Frame hits: ${properties.hits}`
-      );
+      const popup = document.createElement("div");
+      appendTextElement(popup, "strong", `Track ${displayValue(properties.track_id, "?")}`);
+      appendPopupLine(popup, "Review class", properties.track_class);
+      appendPopupLine(popup, "Confidence score", properties.track_score);
+      appendPopupLine(popup, "Frame hits", properties.hits);
+      marker.bindPopup(popup);
     },
   }).addTo(mapInstance);
 

@@ -4,7 +4,7 @@
 
 **Drone footage into rescue intelligence.**
 
-SAR-INTEL TOOLKIT is an open-source humanitarian search-and-rescue intelligence pipeline. It turns drone-style video and telemetry into possible-person detections, confirmed tracks, confidence scores, run provenance, and map-ready GeoJSON.
+SAR-INTEL TOOLKIT is an open-source humanitarian search-and-rescue intelligence pipeline. It turns drone-style video and telemetry into possible-person detections, confirmed detection tracks, confidence scores, run provenance, and map-ready GeoJSON.
 
 ![SAR-INTEL TOOLKIT public demo](docs/assets/public-demo-preview.png)
 

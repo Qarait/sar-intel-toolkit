@@ -186,3 +186,73 @@ def test_summarize_cached_evaluation_uses_same_detections_for_multiple_threshold
     assert high["true_positives"] == 0
     assert high["false_positives"] == 1
     assert high["false_negatives"] == 1
+
+
+def test_build_validation_manifest_pins_file_list_and_hashes(tmp_path) -> None:
+    module = _load_module()
+    split_root = tmp_path / "VisDrone2019-DET-val"
+    images_dir = split_root / "images"
+    annotations_dir = split_root / "annotations"
+    images_dir.mkdir(parents=True)
+    annotations_dir.mkdir()
+    (images_dir / "000002.jpg").write_bytes(b"second-image")
+    (annotations_dir / "000002.txt").write_text("2,2,4,4,1,1,0,0\n", encoding="utf-8")
+    (images_dir / "000001.jpg").write_bytes(b"first-image")
+    (annotations_dir / "000001.txt").write_text("1,1,3,3,1,1,0,0\n", encoding="utf-8")
+
+    manifest = module.build_validation_manifest(tmp_path, "val", max_images=None)
+
+    assert manifest["record_count"] == 2
+    assert [record["image"] for record in manifest["records"]] == ["000001.jpg", "000002.jpg"]
+    assert manifest["checksum"] == module.compute_manifest_checksum(manifest)
+    assert all(len(record["image_sha256"]) == 64 for record in manifest["records"])
+    assert all(len(record["annotation_sha256"]) == 64 for record in manifest["records"])
+
+    (images_dir / "000001.jpg").write_bytes(b"other-image")
+
+    try:
+        module.validate_manifest_files(manifest, tmp_path, "val")
+    except ValueError as exc:
+        assert "SHA256 mismatch" in str(exc)
+    else:
+        raise AssertionError("Expected tampered manifest validation to fail.")
+
+
+def test_average_precision_rewards_confidence_order_not_threshold_shopping() -> None:
+    module = _load_module()
+    image_records = [
+        {
+            "image": "sample-a.jpg",
+            "gt_boxes": [[0.0, 0.0, 10.0, 10.0]],
+            "detections": [
+                {"confidence": 0.90, "bbox": [20.0, 20.0, 30.0, 30.0]},
+                {"confidence": 0.80, "bbox": [0.0, 0.0, 10.0, 10.0]},
+            ],
+        },
+        {
+            "image": "sample-b.jpg",
+            "gt_boxes": [[50.0, 50.0, 60.0, 60.0]],
+            "detections": [
+                {"confidence": 0.70, "bbox": [50.0, 50.0, 60.0, 60.0]},
+            ],
+        },
+    ]
+
+    pr_curve = module.compute_precision_recall_curve(image_records, iou_threshold=0.5)
+    summary = module.summarize_cached_evaluation(
+        image_records,
+        confidence_threshold=0.10,
+        iou_threshold=0.5,
+        dataset_root="/tmp/VisDrone2019-DET-val",
+        split="val",
+        max_images=None,
+        model="yolo26n.pt",
+    )
+
+    assert abs(pr_curve["average_precision"] - (7 / 12)) < 1e-12
+    assert pr_curve["points"] == [
+        {"confidence": 0.9, "precision": 0.0, "recall": 0.0, "tp": 0, "fp": 1},
+        {"confidence": 0.8, "precision": 0.5, "recall": 0.5, "tp": 1, "fp": 1},
+        {"confidence": 0.7, "precision": 2 / 3, "recall": 1.0, "tp": 2, "fp": 1},
+    ]
+    assert abs(summary["average_precision"] - (7 / 12)) < 1e-12

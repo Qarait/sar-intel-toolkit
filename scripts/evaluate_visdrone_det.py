@@ -1,4 +1,5 @@
 import argparse
+import hashlib
 import json
 import sys
 from dataclasses import dataclass
@@ -71,6 +72,19 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default="output/visdrone_det_validation.json",
         help="Path to the JSON summary to write.",
     )
+    parser.add_argument(
+        "--validation-manifest",
+        default=None,
+        help=(
+            "Optional pinned validation manifest JSON. When provided, the evaluator "
+            "verifies the exact image/annotation file list, sizes, and SHA256 hashes."
+        ),
+    )
+    parser.add_argument(
+        "--write-validation-manifest",
+        default=None,
+        help="Optional path to write the validation manifest used for this run.",
+    )
     return parser.parse_args(argv)
 
 
@@ -86,6 +100,153 @@ def resolve_split_root(dataset_root: str | Path, split: str) -> Path:
         f"Could not find a VisDrone DET {split} split under {root}. Expected images/ and annotations/ directories."
     )
 
+
+def sha256_file(path: str | Path) -> str:
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as file_obj:
+        for chunk in iter(lambda: file_obj.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _manifest_checksum_payload(manifest: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "version": manifest["version"],
+        "split": manifest["split"],
+        "max_images": manifest.get("max_images"),
+        "record_count": manifest["record_count"],
+        "records": manifest["records"],
+    }
+
+
+def compute_manifest_checksum(manifest: dict[str, Any]) -> str:
+    payload = json.dumps(
+        _manifest_checksum_payload(manifest),
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def build_validation_manifest(
+    dataset_root: str | Path,
+    split: str,
+    max_images: int | None,
+) -> dict[str, Any]:
+    split_root = resolve_split_root(dataset_root, split)
+    images_dir = split_root / "images"
+    annotations_dir = split_root / "annotations"
+
+    image_paths = sorted(images_dir.glob("*.jpg"))
+    if max_images is not None:
+        image_paths = image_paths[:max_images]
+
+    records: list[dict[str, Any]] = []
+    for image_path in image_paths:
+        annotation_path = annotations_dir / f"{image_path.stem}.txt"
+        if not annotation_path.exists():
+            raise FileNotFoundError(
+                f"Missing annotation file for {image_path.name}: {annotation_path}"
+            )
+
+        records.append(
+            {
+                "image": image_path.name,
+                "annotation": annotation_path.name,
+                "image_size_bytes": image_path.stat().st_size,
+                "annotation_size_bytes": annotation_path.stat().st_size,
+                "image_sha256": sha256_file(image_path),
+                "annotation_sha256": sha256_file(annotation_path),
+            }
+        )
+
+    manifest: dict[str, Any] = {
+        "version": 1,
+        "split": split,
+        "max_images": max_images,
+        "record_count": len(records),
+        "records": records,
+    }
+    manifest["checksum"] = compute_manifest_checksum(manifest)
+    return manifest
+
+
+def load_validation_manifest(path: str | Path) -> dict[str, Any]:
+    manifest = json.loads(Path(path).read_text(encoding="utf-8"))
+    expected_checksum = manifest.get("checksum")
+    actual_checksum = compute_manifest_checksum(manifest)
+    if expected_checksum != actual_checksum:
+        raise ValueError(
+            f"Manifest checksum mismatch: expected {expected_checksum}, got {actual_checksum}"
+        )
+    return manifest
+
+
+def validate_manifest_files(
+    manifest: dict[str, Any],
+    dataset_root: str | Path,
+    split: str,
+) -> list[tuple[Path, Path]]:
+    if manifest.get("split") != split:
+        raise ValueError(
+            f"Manifest split mismatch: expected {split!r}, got {manifest.get('split')!r}"
+        )
+
+    expected_manifest_checksum = manifest.get("checksum")
+    actual_manifest_checksum = compute_manifest_checksum(manifest)
+    if expected_manifest_checksum != actual_manifest_checksum:
+        raise ValueError(
+            "Manifest checksum mismatch: "
+            f"expected {expected_manifest_checksum}, got {actual_manifest_checksum}"
+        )
+
+    split_root = resolve_split_root(dataset_root, split)
+    pairs: list[tuple[Path, Path]] = []
+
+    for record in manifest["records"]:
+        image_path = split_root / "images" / record["image"]
+        annotation_path = split_root / "annotations" / record["annotation"]
+
+        checks = [
+            ("image", image_path, record["image_size_bytes"], record["image_sha256"]),
+            (
+                "annotation",
+                annotation_path,
+                record["annotation_size_bytes"],
+                record["annotation_sha256"],
+            ),
+        ]
+        for label, path, expected_size, expected_hash in checks:
+            if not path.exists():
+                raise FileNotFoundError(f"Manifest {label} file is missing: {path}")
+            if path.stat().st_size != expected_size:
+                raise ValueError(f"{label} size mismatch for {path.name}")
+            actual_hash = sha256_file(path)
+            if actual_hash != expected_hash:
+                raise ValueError(f"{label} SHA256 mismatch for {path.name}")
+
+        pairs.append((image_path, annotation_path))
+
+    return pairs
+
+
+def get_validation_file_pairs(
+    dataset_root: str | Path,
+    split: str,
+    max_images: int | None,
+    validation_manifest: str | Path | None,
+) -> tuple[list[tuple[Path, Path]], dict[str, Any]]:
+    if validation_manifest is not None:
+        manifest = load_validation_manifest(validation_manifest)
+        if manifest.get("max_images") != max_images:
+            raise ValueError(
+                "Manifest max_images mismatch: "
+                f"expected {max_images!r}, got {manifest.get('max_images')!r}"
+            )
+        return validate_manifest_files(manifest, dataset_root, split), manifest
+
+    manifest = build_validation_manifest(dataset_root, split, max_images)
+    return validate_manifest_files(manifest, dataset_root, split), manifest
 
 def load_image(image_path: Path) -> Any:
     frame = cv2.imread(str(image_path))
@@ -227,6 +388,72 @@ def match_detections_to_ground_truth(
     return true_positives, false_positives, false_negatives
 
 
+def compute_precision_recall_curve(
+    image_records: Sequence[dict[str, Any]],
+    iou_threshold: float,
+) -> dict[str, Any]:
+    total_gt = sum(len(record["gt_boxes"]) for record in image_records)
+    unmatched_by_image = {
+        record["image"]: set(range(len(record["gt_boxes"]))) for record in image_records
+    }
+    gt_by_image = {record["image"]: record["gt_boxes"] for record in image_records}
+
+    ranked_detections: list[dict[str, Any]] = []
+    for record in image_records:
+        for detection in record["detections"]:
+            ranked_detections.append(
+                {
+                    "image": record["image"],
+                    "confidence": float(detection["confidence"]),
+                    "bbox": detection["bbox"],
+                }
+            )
+
+    ranked_detections.sort(key=lambda item: item["confidence"], reverse=True)
+
+    points: list[dict[str, float | int]] = []
+    true_positives = 0
+    false_positives = 0
+    precision_at_true_positives: list[float] = []
+
+    for detection in ranked_detections:
+        image_name = detection["image"]
+        unmatched_gt = unmatched_by_image[image_name]
+        gt_boxes = gt_by_image[image_name]
+        best_gt_index = None
+        best_iou = -1.0
+
+        for gt_index in unmatched_gt:
+            iou = bbox_iou(detection["bbox"], gt_boxes[gt_index])
+            if iou > best_iou:
+                best_iou = iou
+                best_gt_index = gt_index
+
+        if best_gt_index is not None and best_iou >= iou_threshold:
+            unmatched_gt.remove(best_gt_index)
+            true_positives += 1
+            precision_at_true_positives.append(
+                safe_ratio(true_positives, true_positives + false_positives)
+            )
+        else:
+            false_positives += 1
+
+        points.append(
+            {
+                "confidence": detection["confidence"],
+                "precision": safe_ratio(true_positives, true_positives + false_positives),
+                "recall": safe_ratio(true_positives, total_gt),
+                "tp": true_positives,
+                "fp": false_positives,
+            }
+        )
+
+    average_precision = safe_ratio(sum(precision_at_true_positives), total_gt)
+    return {
+        "average_precision": average_precision,
+        "points": points,
+    }
+
 def compute_metrics(tp: int, fp: int, fn: int) -> dict[str, float]:
     precision = safe_ratio(tp, tp + fp)
     recall = safe_ratio(tp, tp + fn)
@@ -259,7 +486,7 @@ def evaluate_image(
     annotation_path: Path,
     detector: PersonDetector,
     iou_threshold: float,
-) -> tuple[ImageEvaluation, list[dict[str, float | list[float]]]]:
+) -> tuple[ImageEvaluation, list[dict[str, float | list[float]]], list[list[float]]]:
     gt_boxes = load_ground_truth(annotation_path)
     frame = load_image(image_path)
     raw_detections = detector.detect(frame)
@@ -285,7 +512,7 @@ def evaluate_image(
         precision=metrics["precision"],
         recall=metrics["recall"],
     )
-    return summary, detections
+    return summary, detections, gt_boxes
 
 
 def evaluate_dataset(
@@ -295,18 +522,19 @@ def evaluate_dataset(
     model: str,
     confidence_threshold: float,
     iou_threshold: float,
+    validation_manifest: str | Path | None = None,
 ) -> dict[str, Any]:
-    split_root = resolve_split_root(dataset_root, split)
-    images_dir = split_root / "images"
-    annotations_dir = split_root / "annotations"
-
-    image_paths = sorted(images_dir.glob("*.jpg"))
-    if max_images is not None:
-        image_paths = image_paths[:max_images]
+    file_pairs, manifest = get_validation_file_pairs(
+        dataset_root,
+        split,
+        max_images,
+        validation_manifest,
+    )
 
     detector = PersonDetector(model_path=model, confidence_threshold=confidence_threshold)
 
     per_image: list[dict[str, Any]] = []
+    image_records: list[dict[str, Any]] = []
     gt_person_count = 0
     detection_count = 0
     true_positives = 0
@@ -314,12 +542,13 @@ def evaluate_dataset(
     false_negatives = 0
     confidence_total = 0.0
 
-    for image_path in image_paths:
-        annotation_path = annotations_dir / f"{image_path.stem}.txt"
-        if not annotation_path.exists():
-            raise FileNotFoundError(f"Missing annotation file for {image_path.name}: {annotation_path}")
-
-        summary, detections = evaluate_image(image_path, annotation_path, detector, iou_threshold)
+    for image_path, annotation_path in file_pairs:
+        summary, detections, gt_boxes = evaluate_image(
+            image_path,
+            annotation_path,
+            detector,
+            iou_threshold,
+        )
         per_image.append(
             {
                 "image": summary.image,
@@ -332,6 +561,13 @@ def evaluate_dataset(
                 "recall": summary.recall,
             }
         )
+        image_records.append(
+            {
+                "image": summary.image,
+                "gt_boxes": gt_boxes,
+                "detections": detections,
+            }
+        )
 
         gt_person_count += summary.gt_count
         detection_count += summary.detections
@@ -342,9 +578,10 @@ def evaluate_dataset(
 
     metrics = compute_metrics(true_positives, false_positives, false_negatives)
     mean_confidence = safe_ratio(confidence_total, detection_count)
+    pr_curve = compute_precision_recall_curve(image_records, iou_threshold)
 
     return {
-        "images_evaluated": len(image_paths),
+        "images_evaluated": len(file_pairs),
         "gt_person_count": gt_person_count,
         "detection_count": detection_count,
         "true_positives": true_positives,
@@ -353,6 +590,8 @@ def evaluate_dataset(
         "precision": metrics["precision"],
         "recall": metrics["recall"],
         "f1": metrics["f1"],
+        "average_precision": pr_curve["average_precision"],
+        "precision_recall_curve": pr_curve["points"],
         "mean_confidence": mean_confidence,
         "confidence_threshold": confidence_threshold,
         "iou_threshold": iou_threshold,
@@ -360,6 +599,7 @@ def evaluate_dataset(
         "dataset_root": str(Path(dataset_root).resolve()),
         "split": split,
         "max_images": max_images,
+        "validation_manifest": manifest,
         "timestamp_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "per_image": per_image,
     }
@@ -421,6 +661,7 @@ def summarize_cached_evaluation(
 
     metrics = compute_metrics(true_positives, false_positives, false_negatives)
     mean_confidence = safe_ratio(confidence_total, detection_count)
+    pr_curve = compute_precision_recall_curve(image_records, iou_threshold)
 
     return {
         "images_evaluated": len(image_records),
@@ -432,6 +673,8 @@ def summarize_cached_evaluation(
         "precision": metrics["precision"],
         "recall": metrics["recall"],
         "f1": metrics["f1"],
+        "average_precision": pr_curve["average_precision"],
+        "precision_recall_curve": pr_curve["points"],
         "mean_confidence": mean_confidence,
         "confidence_threshold": confidence_threshold,
         "iou_threshold": iou_threshold,
@@ -451,32 +694,25 @@ def evaluate_dataset_sweep(
     model: str,
     sweep_thresholds: Sequence[float],
     iou_threshold: float,
+    validation_manifest: str | Path | None = None,
 ) -> dict[str, Any]:
     thresholds = sorted(set(float(value) for value in sweep_thresholds))
     if not thresholds:
         raise ValueError("At least one sweep threshold is required.")
 
     base_threshold = min(thresholds)
-
-    split_root = resolve_split_root(dataset_root, split)
-    images_dir = split_root / "images"
-    annotations_dir = split_root / "annotations"
-
-    image_paths = sorted(images_dir.glob("*.jpg"))
-    if max_images is not None:
-        image_paths = image_paths[:max_images]
+    file_pairs, manifest = get_validation_file_pairs(
+        dataset_root,
+        split,
+        max_images,
+        validation_manifest,
+    )
 
     detector = PersonDetector(model_path=model, confidence_threshold=base_threshold)
 
     image_records: list[dict[str, Any]] = []
 
-    for image_path in image_paths:
-        annotation_path = annotations_dir / f"{image_path.stem}.txt"
-        if not annotation_path.exists():
-            raise FileNotFoundError(
-                f"Missing annotation file for {image_path.name}: {annotation_path}"
-            )
-
+    for image_path, annotation_path in file_pairs:
         gt_boxes = load_ground_truth(annotation_path)
         frame = load_image(image_path)
         raw_detections = detector.detect(frame)
@@ -497,6 +733,7 @@ def evaluate_dataset_sweep(
             }
         )
 
+    pr_curve = compute_precision_recall_curve(image_records, iou_threshold)
     results = [
         summarize_cached_evaluation(
             image_records,
@@ -519,6 +756,9 @@ def evaluate_dataset_sweep(
         "sweep_thresholds": thresholds,
         "base_detector_threshold": base_threshold,
         "max_images": max_images,
+        "average_precision": pr_curve["average_precision"],
+        "precision_recall_curve": pr_curve["points"],
+        "validation_manifest": manifest,
         "timestamp_utc": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "results": results,
     }
@@ -542,6 +782,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             model=args.model,
             sweep_thresholds=thresholds,
             iou_threshold=args.iou_threshold,
+            validation_manifest=args.validation_manifest,
         )
     else:
         result = evaluate_dataset(
@@ -551,9 +792,16 @@ def main(argv: Sequence[str] | None = None) -> int:
             model=args.model,
             confidence_threshold=args.confidence_threshold,
             iou_threshold=args.iou_threshold,
+            validation_manifest=args.validation_manifest,
         )
     output_path = write_output(result, args.output)
     print(f"Saved VisDrone DET validation summary to {output_path}")
+    print(f"Validation manifest checksum: {result['validation_manifest']['checksum']}")
+    print(f"Average precision: {result['average_precision']:.4f}")
+
+    if args.write_validation_manifest:
+        manifest_path = write_output(result["validation_manifest"], args.write_validation_manifest)
+        print(f"Saved validation manifest to {manifest_path}")
 
     if args.sweep:
         print("\nConfidence threshold sweep:")

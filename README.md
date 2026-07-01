@@ -42,7 +42,7 @@ The demo is static and public-safe. It is intended to communicate the workflow, 
 
 The toolkit now includes a documented VisDrone DET validation run for public aerial-drone imagery.
 
-The validation harness evaluates the existing person detector against VisDrone `pedestrian` and `people` annotations and reports precision, recall, F1, TP, FP, FN, and per-image summaries.
+The validation harness evaluates the existing person detector against VisDrone `pedestrian` and `people` annotations and reports fixed-threshold precision, recall, F1, average precision, PR-curve points, TP, FP, FN, per-image summaries, and a SHA256-pinned validation manifest.
 
 Initial full validation split result:
 
@@ -56,7 +56,7 @@ Initial full validation split result:
 - Recall: 0.0574
 - F1: 0.1073
 
-This is an aerial-person detection sanity check, not an operational SAR benchmark. The baseline model was not trained specifically on VisDrone aerial-person imagery, so low recall is expected.
+This is an aerial-person detection sanity check, not an operational SAR benchmark. The baseline model was not trained specifically on VisDrone aerial-person imagery, so low recall is expected. Future model claims should compare against the same pinned validation manifest and fixed thresholds, not a best-found recall threshold.
 
 
 ## Current capabilities

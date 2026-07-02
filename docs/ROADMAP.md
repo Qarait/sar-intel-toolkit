@@ -21,6 +21,7 @@ This roadmap is bold about direction and conservative about claims. Every new in
 - Fine-tune report gate for publish/no-publish aerial recall claims
 - Aerial dataset intake audit for HERIDAL, SeaDronesSee, VisDrone-person, Okutama-Action, and AU-AIR
 - HERIDAL-style person-only YOLO conversion for the first external SAR-relevant training source
+- Combined person-YOLO dataset builder with source-prefixed files and provenance manifest
 
 ## Near-term
 

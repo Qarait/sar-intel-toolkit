@@ -433,7 +433,7 @@ fetchDemoGeoJson()
   .catch((error) => {
     renderErrorState(String(error));
   });
-const reviewCandidates = [
+const fallbackReviewCandidates = [
   {
     id: "motion-0007",
     title: "Tree-line motion candidate",
@@ -493,9 +493,63 @@ const reviewDecisionActions = [
   { status: "rejected", label: "Reject candidate" },
 ];
 
+let reviewCandidates = [...fallbackReviewCandidates];
 let selectedReviewCandidateId = reviewCandidates[0]?.id || null;
 let reviewDecisionLog = [];
 
+function fetchPublicReviewQueue() {
+  return fetch("assets/review_queue.json").then((response) => {
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    return response.json();
+  });
+}
+
+function normalizeReviewQueueCandidate(candidate) {
+  const preview = candidate.frame_preview || {};
+  return {
+    id: candidate.tracklet_id,
+    title: candidate.title,
+    frameRange: candidate.frame_range,
+    status: candidate.status || "unreviewed",
+    priority: Number(candidate.review_priority || 0),
+    motionScore: Number(candidate.motion_score || 0),
+    missProbability: Number(candidate.coverage_miss_probability || 0),
+    evidence: candidate.evidence,
+    locationHint: candidate.location_hint,
+    bbox: preview.bbox_percent || { left: 40, top: 40, width: 18, height: 24 },
+    trail: Array.isArray(preview.motion_trail_percent) ? preview.motion_trail_percent : [],
+  };
+}
+
+function applyReviewQueuePayload(payload) {
+  const candidates = Array.isArray(payload?.candidates)
+    ? payload.candidates.map(normalizeReviewQueueCandidate).filter((candidate) => candidate.id)
+    : [];
+
+  if (candidates.length === 0) {
+    return false;
+  }
+
+  reviewCandidates = candidates;
+  selectedReviewCandidateId = reviewCandidates[0].id;
+  reviewDecisionLog = [];
+  renderReviewCockpit();
+  return true;
+}
+
+function loadPublicReviewQueue() {
+  fetchPublicReviewQueue()
+    .then((payload) => {
+      if (!applyReviewQueuePayload(payload)) {
+        renderReviewCockpit();
+      }
+    })
+    .catch(() => {
+      renderReviewCockpit();
+    });
+}
 function reviewStatusLabel(status) {
   if (status === "confirmed") {
     return "confirmed by reviewer";
@@ -667,4 +721,4 @@ function renderReviewCockpit() {
   renderReviewLog();
 }
 
-renderReviewCockpit();
+loadPublicReviewQueue();

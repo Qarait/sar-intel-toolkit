@@ -183,6 +183,45 @@
       </div>
     </section>
 
+
+    <section class="panel review-cockpit-panel" id="review">
+      <div class="review-copy">
+        <p class="section-tag">Human review cockpit</p>
+        <h2>Candidate review, uncertainty, and human decisions in one screen.</h2>
+        <p>
+          The next SAR-INTEL interface is not just a detector output. It is a human review cockpit: motion candidates, coverage uncertainty, and reviewer decisions stay visible together so the operator can move fast without pretending the system is certain.
+        </p>
+        <p class="review-note">
+          Demo-only state. These are review candidates, not confirmed people, and browser decisions are a public-site preview of the persisted review-decision workflow.
+        </p>
+      </div>
+      <div class="review-workspace" aria-label="Human review cockpit demo">
+        <div class="review-frame-panel">
+          <div class="review-frame-head">
+            <span id="review-frame-title">Candidate frame</span>
+            <strong id="review-frame-status">unreviewed</strong>
+          </div>
+          <div class="review-frame" id="review-frame" aria-label="Candidate frame preview">
+            <span class="review-scanline"></span>
+            <div class="review-candidate-box" id="review-candidate-box"></div>
+            <div class="review-motion-trail" id="review-motion-trail"></div>
+          </div>
+          <dl class="review-details" id="review-details"></dl>
+          <div class="review-actions" id="review-actions" aria-label="Review decision actions"></div>
+        </div>
+        <aside class="review-queue-panel">
+          <div class="review-stat-grid" id="review-stat-grid"></div>
+          <div>
+            <h3>candidate queue</h3>
+            <div class="review-candidate-list" id="review-candidate-list"></div>
+          </div>
+          <div>
+            <h3>Decision log</h3>
+            <div class="review-log" id="review-log"></div>
+          </div>
+        </aside>
+      </div>
+    </section>
     <section class="panel map-panel" id="demo">
       <div class="map-copy">
         <p class="section-tag">Map-ready GeoJSON</p>

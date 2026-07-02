@@ -433,3 +433,238 @@ fetchDemoGeoJson()
   .catch((error) => {
     renderErrorState(String(error));
   });
+const reviewCandidates = [
+  {
+    id: "motion-0007",
+    title: "Tree-line motion candidate",
+    frameRange: "frames 184-193",
+    status: "unreviewed",
+    priority: 14.6,
+    motionScore: 8.1,
+    missProbability: 0.65,
+    evidence: "Persistent small motion against a mostly static background.",
+    locationHint: "northwest grid cell",
+    bbox: { left: 28, top: 36, width: 22, height: 30 },
+    trail: [
+      { left: 30, top: 62 },
+      { left: 36, top: 58 },
+      { left: 43, top: 54 },
+    ],
+  },
+  {
+    id: "motion-0012",
+    title: "Ridge-path uncertainty candidate",
+    frameRange: "frames 241-249",
+    status: "unreviewed",
+    priority: 12.2,
+    motionScore: 6.7,
+    missProbability: 0.55,
+    evidence: "Lower motion score, but coverage confidence says this cell deserves another human look.",
+    locationHint: "ridge path edge",
+    bbox: { left: 56, top: 24, width: 18, height: 24 },
+    trail: [
+      { left: 58, top: 46 },
+      { left: 61, top: 43 },
+      { left: 65, top: 41 },
+    ],
+  },
+  {
+    id: "motion-0019",
+    title: "Open-field flicker candidate",
+    frameRange: "frames 318-322",
+    status: "unreviewed",
+    priority: 8.4,
+    motionScore: 5.9,
+    missProbability: 0.25,
+    evidence: "Short-lived motion that remains below confirmation threshold until reviewed.",
+    locationHint: "open field pass",
+    bbox: { left: 41, top: 52, width: 16, height: 20 },
+    trail: [
+      { left: 43, top: 70 },
+      { left: 47, top: 68 },
+      { left: 50, top: 66 },
+    ],
+  },
+];
+
+const reviewDecisionActions = [
+  { status: "confirmed", label: "Confirm candidate" },
+  { status: "uncertain", label: "Mark uncertain" },
+  { status: "rejected", label: "Reject candidate" },
+];
+
+let selectedReviewCandidateId = reviewCandidates[0]?.id || null;
+let reviewDecisionLog = [];
+
+function reviewStatusLabel(status) {
+  if (status === "confirmed") {
+    return "confirmed by reviewer";
+  }
+  if (status === "rejected") {
+    return "rejected by reviewer";
+  }
+  if (status === "uncertain") {
+    return "uncertain after review";
+  }
+  return "unreviewed";
+}
+
+function selectedReviewCandidate() {
+  return reviewCandidates.find((candidate) => candidate.id === selectedReviewCandidateId) || reviewCandidates[0];
+}
+
+function renderReviewStats() {
+  const container = document.getElementById("review-stat-grid");
+  if (!container) {
+    return;
+  }
+
+  container.innerHTML = "";
+  const counts = {
+    candidates: reviewCandidates.length,
+    unresolved: reviewCandidates.filter((candidate) => candidate.status === "unreviewed").length,
+    decisions: reviewDecisionLog.length,
+  };
+
+  for (const item of [
+    { label: "Candidates", value: counts.candidates },
+    { label: "Unresolved", value: counts.unresolved },
+    { label: "Decisions", value: counts.decisions },
+  ]) {
+    const card = document.createElement("article");
+    appendTextElement(card, "span", item.label);
+    appendTextElement(card, "strong", item.value);
+    container.appendChild(card);
+  }
+}
+
+function renderReviewCandidateList() {
+  const container = document.getElementById("review-candidate-list");
+  if (!container) {
+    return;
+  }
+
+  container.innerHTML = "";
+  for (const candidate of reviewCandidates) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = candidate.id === selectedReviewCandidateId ? "review-candidate is-active" : "review-candidate";
+    button.addEventListener("click", () => {
+      selectedReviewCandidateId = candidate.id;
+      renderReviewCockpit();
+    });
+
+    const heading = document.createElement("span");
+    heading.className = "review-candidate-title";
+    heading.textContent = candidate.title;
+    button.appendChild(heading);
+
+    const meta = document.createElement("span");
+    meta.className = "review-candidate-meta";
+    meta.textContent = `${candidate.id} · priority ${candidate.priority.toFixed(1)} · ${reviewStatusLabel(candidate.status)}`;
+    button.appendChild(meta);
+
+    container.appendChild(button);
+  }
+}
+
+function renderReviewFrame(candidate) {
+  const title = document.getElementById("review-frame-title");
+  const status = document.getElementById("review-frame-status");
+  const box = document.getElementById("review-candidate-box");
+  const trail = document.getElementById("review-motion-trail");
+  const details = document.getElementById("review-details");
+
+  if (title) {
+    title.textContent = `${candidate.title} · ${candidate.frameRange}`;
+  }
+  if (status) {
+    status.textContent = reviewStatusLabel(candidate.status);
+    status.dataset.status = candidate.status;
+  }
+  if (box) {
+    box.style.left = `${candidate.bbox.left}%`;
+    box.style.top = `${candidate.bbox.top}%`;
+    box.style.width = `${candidate.bbox.width}%`;
+    box.style.height = `${candidate.bbox.height}%`;
+    box.textContent = candidate.id;
+  }
+  if (trail) {
+    trail.innerHTML = "";
+    for (const point of candidate.trail) {
+      const dot = document.createElement("span");
+      dot.style.left = `${point.left}%`;
+      dot.style.top = `${point.top}%`;
+      trail.appendChild(dot);
+    }
+  }
+  if (details) {
+    details.innerHTML = "";
+    appendDefinition(details, "Motion score", candidate.motionScore.toFixed(1));
+    appendDefinition(details, "Coverage miss probability", candidate.missProbability.toFixed(2));
+    appendDefinition(details, "Review priority", candidate.priority.toFixed(1));
+    appendDefinition(details, "Location hint", candidate.locationHint);
+    appendDefinition(details, "Why surfaced", candidate.evidence);
+  }
+}
+
+function renderReviewActions(candidate) {
+  const container = document.getElementById("review-actions");
+  if (!container) {
+    return;
+  }
+
+  container.innerHTML = "";
+  for (const action of reviewDecisionActions) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `review-action review-action-${action.status}`;
+    button.textContent = action.label;
+    button.addEventListener("click", () => {
+      candidate.status = action.status;
+      reviewDecisionLog.unshift({
+        trackletId: candidate.id,
+        status: action.status,
+        reviewer: "public-demo-reviewer",
+        decidedAt: new Date().toISOString(),
+      });
+      renderReviewCockpit();
+    });
+    container.appendChild(button);
+  }
+}
+
+function renderReviewLog() {
+  const container = document.getElementById("review-log");
+  if (!container) {
+    return;
+  }
+
+  container.innerHTML = "";
+  if (reviewDecisionLog.length === 0) {
+    appendTextElement(container, "p", "No demo decisions yet. Select a candidate and record a review action.");
+    return;
+  }
+
+  for (const decision of reviewDecisionLog.slice(0, 5)) {
+    const item = document.createElement("article");
+    appendTextElement(item, "strong", `${decision.trackletId}: ${reviewStatusLabel(decision.status)}`);
+    appendTextElement(item, "span", `${decision.reviewer} · ${decision.decidedAt}`);
+    container.appendChild(item);
+  }
+}
+
+function renderReviewCockpit() {
+  const candidate = selectedReviewCandidate();
+  if (!candidate) {
+    return;
+  }
+
+  renderReviewStats();
+  renderReviewCandidateList();
+  renderReviewFrame(candidate);
+  renderReviewActions(candidate);
+  renderReviewLog();
+}
+
+renderReviewCockpit();

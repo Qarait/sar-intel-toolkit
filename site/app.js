@@ -444,6 +444,7 @@ const fallbackReviewCandidates = [
     missProbability: 0.65,
     evidence: "Persistent small motion against a mostly static background.",
     locationHint: "northwest grid cell",
+    image: "assets/review-candidates/motion-0007.png",
     bbox: { left: 28, top: 36, width: 22, height: 30 },
     trail: [
       { left: 30, top: 62 },
@@ -461,6 +462,7 @@ const fallbackReviewCandidates = [
     missProbability: 0.55,
     evidence: "Lower motion score, but coverage confidence says this cell deserves another human look.",
     locationHint: "ridge path edge",
+    image: "assets/review-candidates/motion-0012.png",
     bbox: { left: 56, top: 24, width: 18, height: 24 },
     trail: [
       { left: 58, top: 46 },
@@ -478,6 +480,7 @@ const fallbackReviewCandidates = [
     missProbability: 0.25,
     evidence: "Short-lived motion that remains below confirmation threshold until reviewed.",
     locationHint: "open field pass",
+    image: "assets/review-candidates/motion-0019.png",
     bbox: { left: 41, top: 52, width: 16, height: 20 },
     trail: [
       { left: 43, top: 70 },
@@ -518,6 +521,7 @@ function normalizeReviewQueueCandidate(candidate) {
     missProbability: Number(candidate.coverage_miss_probability || 0),
     evidence: candidate.evidence,
     locationHint: candidate.location_hint,
+    image: preview.image,
     bbox: preview.bbox_percent || { left: 40, top: 40, width: 18, height: 24 },
     trail: Array.isArray(preview.motion_trail_percent) ? preview.motion_trail_percent : [],
   };
@@ -625,10 +629,25 @@ function renderReviewCandidateList() {
 function renderReviewFrame(candidate) {
   const title = document.getElementById("review-frame-title");
   const status = document.getElementById("review-frame-status");
+  const frame = document.getElementById("review-frame");
   const box = document.getElementById("review-candidate-box");
   const trail = document.getElementById("review-motion-trail");
   const details = document.getElementById("review-details");
 
+  if (frame) {
+    let image = frame.querySelector(".review-frame-image");
+    if (candidate.image) {
+      if (!image) {
+        image = document.createElement("img");
+        image.className = "review-frame-image";
+        frame.prepend(image);
+      }
+      image.src = candidate.image;
+      image.alt = `${candidate.title} public-safe preview`;
+    } else if (image) {
+      image.remove();
+    }
+  }
   if (title) {
     title.textContent = `${candidate.title} · ${candidate.frameRange}`;
   }

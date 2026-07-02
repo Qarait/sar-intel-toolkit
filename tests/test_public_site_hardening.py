@@ -24,3 +24,16 @@ def test_public_site_keeps_simulation_first_framing_in_hero() -> None:
     index_html = (ROOT / "site" / "index.html").read_text(encoding="utf-8")
 
     assert "Simulation-first humanitarian SAR intelligence" in index_html
+
+
+def test_public_site_exposes_review_cockpit_without_operational_overclaim() -> None:
+    index_html = (ROOT / "site" / "index.html").read_text(encoding="utf-8")
+    app_js = (ROOT / "site" / "app.js").read_text(encoding="utf-8")
+
+    assert "Human review cockpit" in index_html
+    assert "candidate queue" in index_html
+    assert "Confirm candidate" in app_js
+    assert "Mark uncertain" in app_js
+    assert "Reject candidate" in app_js
+    assert "victim found" not in index_html.lower()
+    assert "victim found" not in app_js.lower()

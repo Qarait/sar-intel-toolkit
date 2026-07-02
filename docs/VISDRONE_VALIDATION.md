@@ -209,6 +209,18 @@ python scripts/compare_visdrone_runs.py \
 
 A candidate detector should not be described as improved unless this gate passes on the same validation manifest. The gate requires matching manifest checksums, recall improvement at matching fixed thresholds, no unacceptable precision collapse, and average-precision improvement. This protects the project from accidental split drift and from threshold-shopping that makes recall look better while the detector becomes less useful.
 
+For a publishable summary, generate the fine-tune report:
+
+```bash
+python scripts/report_visdrone_finetune.py \
+  --baseline output/visdrone_det_sweep.json \
+  --candidate output/visdrone_det_finetuned_sweep.json \
+  --training-metadata output/visdrone_training_metadata.json \
+  --output output/visdrone_finetune_report.json
+```
+
+Only a report with `claim.allowed: true` supports language that the candidate detector improved aerial-person recall. A failed report is still useful: it records exactly which gate blocked the claim.
+
 ## How To Improve This Later
 
 - Fine-tune the detector on aerial-person data, including VisDrone-like viewpoints and object scales.

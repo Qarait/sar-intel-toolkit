@@ -84,4 +84,18 @@ python scripts/evaluate_visdrone_det.py \
 
 Treat `output/visdrone_det_val_manifest.json` as part of the benchmark definition. If the manifest checksum changes, the run is a new benchmark and should not be compared directly with the published baseline.
 
-A fine-tuned model should only be described as improved when recall improves at fixed thresholds without an unacceptable precision collapse, and average precision / PR-curve behavior also improves on the same pinned manifest.
+## Build the fine-tune report gate
+
+After the baseline and candidate sweeps are produced on the same pinned manifest, build the publishable gate report:
+
+```bash
+python scripts/report_visdrone_finetune.py \
+  --baseline output/visdrone_det_sweep.json \
+  --candidate output/visdrone_det_finetuned_sweep.json \
+  --training-metadata output/visdrone_training_metadata.json \
+  --output output/visdrone_finetune_report.json
+```
+
+The command exits non-zero unless the candidate passes the same-manifest, fixed-threshold recall, precision-ratio, and average-precision gates. Use `--always-zero` only for exploratory local report generation, not for publishing an improvement claim.
+
+A fine-tuned model should only be described as improved when this report sets `claim.allowed` to `true`. Until then, the public detector remains the pre-fine-tune baseline.

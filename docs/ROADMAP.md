@@ -18,6 +18,7 @@ This roadmap is bold about direction and conservative about claims. Every new in
 - Landing page with GeoJSON demo
 - SHA256-pinned VisDrone validation manifests
 - Fixed-threshold AP / PR-curve reporting for detector comparisons
+- Fine-tune report gate for publish/no-publish aerial recall claims
 
 ## Near-term
 

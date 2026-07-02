@@ -1305,3 +1305,18 @@ h3 {
     min-height: 320px;
   }
 }
+.review-frame-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.82;
+  filter: saturate(1.08) contrast(1.08);
+}
+
+.review-scanline,
+.review-candidate-box,
+.review-motion-trail {
+  z-index: 2;
+}

@@ -19,6 +19,7 @@ This roadmap is bold about direction and conservative about claims. Every new in
 - SHA256-pinned VisDrone validation manifests
 - Fixed-threshold AP / PR-curve reporting for detector comparisons
 - Fine-tune report gate for publish/no-publish aerial recall claims
+- Aerial dataset intake audit for HERIDAL, SeaDronesSee, VisDrone-person, Okutama-Action, and AU-AIR
 
 ## Near-term
 

@@ -24,7 +24,7 @@ This roadmap is bold about direction and conservative about claims. Every new in
 - Add a detector comparison gate that refuses apples-to-oranges fine-tune claims.
 - Prototype coverage-confidence grid logic with synthetic planted-target mechanics/ranking validation; defer calibrated probability claims until fine-tuned recall inputs and held-out validation exist.
 - Add motion-first candidate tracklets from frame differencing or optical flow. First slice: synthetic-frame motion candidates and persistence-scored tracklets.
-- Add a review queue that ranks track-level candidates by uncertainty, motion, and detector evidence. First slices: JSON-ready motion records, uncertainty-weighted review ranking, persisted reviewer decisions, and a public review cockpit preview.
+- Add a review queue that ranks track-level candidates by uncertainty, motion, and detector evidence. First slices: JSON-ready motion records, uncertainty-weighted review ranking, persisted reviewer decisions, a public review cockpit preview, and a public-safe review queue asset.
 - Keep SAR priors minimal at first: last known position, elapsed time, simple movement radius, and optional search-area polygon.
 
 ## Longer-term

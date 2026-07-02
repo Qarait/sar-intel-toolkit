@@ -35,5 +35,6 @@ def test_public_site_exposes_review_cockpit_without_operational_overclaim() -> N
     assert "Confirm candidate" in app_js
     assert "Mark uncertain" in app_js
     assert "Reject candidate" in app_js
+    assert "assets/review_queue.json" in app_js
     assert "victim found" not in index_html.lower()
     assert "victim found" not in app_js.lower()

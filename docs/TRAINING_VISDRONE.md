@@ -63,8 +63,12 @@ python scripts/train_visdrone_person.py \
   --imgsz 640 \
   --batch auto \
   --project runs/visdrone_person \
-  --name yolo26n_visdrone_person
+  --name yolo26n_visdrone_person \
+  --dataset-manifest /path/to/datasets/visdrone_person/combined_manifest.json \
+  --metadata-output output/visdrone_training_metadata.json
 ```
+
+For a metadata-only dry run, add `--metadata-only`. This records dataset YAML hash, optional dataset manifest hash/payload, training parameters, expected best weights path, and timestamp without importing Ultralytics or using a GPU.
 
 ## Evaluate without threshold-shopping
 

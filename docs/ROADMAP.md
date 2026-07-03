@@ -23,6 +23,7 @@ This roadmap is bold about direction and conservative about claims. Every new in
 - HERIDAL-style person-only YOLO conversion for the first external SAR-relevant training source
 - Combined person-YOLO dataset builder with source-prefixed files and provenance manifest
 - Recall experiment runner that links dataset provenance, candidate sweep, and fine-tune claim gate
+- Training metadata capture for dataset hashes, run parameters, and expected weights path
 
 ## Near-term
 
